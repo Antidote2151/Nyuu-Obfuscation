@@ -1,0 +1,99 @@
+Nyuu
+Flexible binary usenet poster
+-----------------------------
+
+Usage: nyuu [options] file1 file2 ...
+
+All options take one parameter, except for those marked as a flag option.
+Options can also be set using a custom config file (see `--config` option), in
+which case, flag options, if set, can be unset by prefixing `no-` to the name,
+for example, `--no-ssl` to explicitly disable SSL.
+
+This is a summarized list. Use `--help-full` to see a full list of options.
+
+Upload Server Options:
+
+  -h,  --host                Host/server to upload to.
+  -P,  --port                Port to connect to (default 119 or 563 if `--ssl`
+                             is specified)
+  -S,  --ssl                 Connect over SSL/TLS (flag option)
+       --ignore-cert         Ignore SSL certificate problems (flag option)
+  -u,  --user                Username to authenticate with
+  -p,  --password            Password to authenticate with
+  -n,  --connections         Number of connections to use (default 3)
+
+Article/Post Options:
+
+  -a,  --article-size        Target size of each news post (default 700K)
+  -t,  --comment             Comment to insert before post subject
+  -f,  --from                Name and email of uploader.
+                             Defaults to 'username <username@host>', where
+                             these values are sourced from the local system.
+  -g,  --groups              Comma separated list of groups to post to. Do
+                             not add spaces between commas.
+                             Defaults to alt.binaries.test
+
+Post Check Options:
+
+  -k1, --check-connections=1 Enable post checking (flag option)
+       --check-tries         Maximum number of check attempts to perform.
+                             A value of 0 disables post checking. (default 2)
+       --check-delay         Initial delay after posting before performing
+                             first check (default 5s)
+       --check-retry-delay   Delay for check retries, if a check fails
+                             (default 30s). Not used if `--check-tries` < 2
+       --check-post-tries    Maximum number of attempts to re-post articles
+                             that the post check could not find. Set to 0 to
+                             disable re-posting articles (default 1)
+
+Other Upload/Check Options:
+
+  -e,  --skip-errors=all     Continue processing regardless of errors.
+                             By default, Nyuu stops on all errors.
+
+NZB Output Options:
+
+  -o,  --out                 If supplied, will write NZB to this file
+  -O,  --overwrite           If NZB exists, overwrite it, otherwise will error
+                             (flag option)
+       --nzb-title           A human-readable identifiable title for the
+                             contents of the NZB
+       --nzb-tag             An attribute of the NZB contents, such as "SD"
+                             Can be specified multiple times
+       --nzb-category        Suggested category as used by your indexing
+                             service (preferrably one, but can be specified
+                             multiple times)
+       --nzb-password        Attach a password to this NZB if its contents
+                             requires one. Can be specified multiple times
+                             if there are multiple passwords
+
+UI Options:
+
+  -q,  --quiet               Only show warnings/errors. (flag option)
+  -C,  --config              Use a custom configuration file, see
+                             config-sample.json for an example. The options
+                             correspond with the command arguments documented
+                             in this help file (full options only, short
+                             aliases aren't supported).
+  -?,  --help                Display this help screen (flag option)
+       --help-full           Display full help screen (flag option)
+
+Input Files:
+
+  Additional arguments are taken as files to be posted. Directories can be
+  specified as well, in which case all files inside are processed according
+  to the following option:
+
+  -r,  --subdirs=keep        Upload all files in directories, recursively.
+                             Otherwise, nested directories are skipped.
+
+------------------
+Examples
+
+  nyuu -h example.com some_file
+      Uploads some_file to the NNTP server at example.com
+
+  nyuu -h news.example.com -S -u cat -p nyahaha -n3 -f 'Cat <eager-poster@computer>' -g alt.binaries.multimedia -o my_cat.nzb my_cat.mp4
+      Uploads my_cat.mp4 to NNTPS server at news.example.com in group
+      alt.binaries.multimedia. Upload is performed using 3 connections. 
+      The from username is specified, and Nyuu will output an NZB, my_cat.nzb.

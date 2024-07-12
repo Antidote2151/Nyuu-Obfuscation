@@ -1,0 +1,40 @@
+{
+" This is a sample config file which can be given to Nyuu using the -C flag ":0,
+" See help.txt for an explanation for what each item does ":0,
+" Be aware that this file needs to be formatted as JSON. Basically, values you give need to be surrounded by double-quotes with a comma at the end (see below for examples). The only values which don't use quotes are integers and the special values 'true', 'false' and 'null' ":0,
+
+" *** Server Options *** ":0,
+"host":               "127.0.0.1",
+"port":               119,
+"ssl":                false,
+"ignore-cert":        false,
+"user":               "",
+"password":           "",
+"connections":        3,
+
+" *** Article Options *** ":0,
+"article-size":       "700K",
+"comment":            "",
+"from":               "Snazzy Poster <me@localhost.localdomain>",
+"groups":             "alt.binaries.test, alt.binaries.boneless",
+
+" *** Check Options *** ":0,
+"check-connections":  0,
+"check-tries":        2,
+"check-delay":        "5s",
+"check-retry-delay":  "30s",
+"check-post-tries":   1,
+
+" *** NZB Options *** ":0,
+"out":                null,
+"overwrite":          false,
+
+" *** Other Options *** ":0,
+"skip-errors":        false,
+"quiet":              false,
+
+
+" More options can be specified; see help.txt for a list with explanations ":0,
+
+" End of config file ":0
+}

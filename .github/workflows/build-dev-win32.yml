@@ -1,0 +1,26 @@
+name: Build dev Win32 binary
+on:
+  workflow_dispatch:
+
+jobs:
+  build-dev-win32:
+    name: Build x86 Windows binary
+    runs-on: windows-2019
+    env:
+      BUILD_ARCH: x86
+      BUILD_LOGLEVEL: verbose
+    steps:
+      - uses: ilammy/setup-nasm@v1
+      - uses: MatteoH2O1999/setup-python@v3 # https://github.com/actions/setup-python/issues/672
+        with:
+          python-version: '2.7'
+      - uses: actions/checkout@v3
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build)
+      - run: move nexe\nyuu.exe nyuu.exe && 7z a -t7z -mx=9 nyuu.7z config-sample.json nyuu.exe
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./nyuu.7z
+          name: nyuu-${{ github.ref_name }}-win32.7z
+          retention-days: 5

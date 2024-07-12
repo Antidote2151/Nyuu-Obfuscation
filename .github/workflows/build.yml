@@ -1,0 +1,131 @@
+name: Build release binary
+on:
+  release:
+    types: [published]
+  #push:
+  #  tags:
+  #  - v*.*.*
+
+jobs:
+  build-win32:
+    name: Build x86 Windows binary
+    runs-on: windows-2019
+    env:
+      BUILD_ARCH: x86
+      BUILD_LOGLEVEL: verbose
+    steps:
+      - uses: ilammy/setup-nasm@v1
+      - uses: MatteoH2O1999/setup-python@v3
+        with:
+          python-version: '2.7'
+      - uses: actions/checkout@v3
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build)
+      - run: move nexe\nyuu.exe nyuu.exe && 7z a -t7z -mx=9 nyuu.7z config-sample.json nyuu.exe
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }} 
+          asset_path: ./nyuu.7z
+          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-win32.7z
+          asset_content_type: application/octet-stream
+  
+  build-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - target: x86_64-linux-musl
+          arch: x64
+          xz_bcj: --x86
+          name: amd64
+        - target: aarch64-linux-musl
+          arch: arm64
+          xz_bcj: 
+          name: aarch64
+        # disabled due to compiler crashing
+        #- target: armv7l-linux-musleabihf
+        #  arch: arm
+        #  xz_bcj: --arm
+        #  name: armhf
+    name: Build ${{ matrix.name }} Linux binary
+    runs-on: ubuntu-latest
+    env:
+      BUILD_ARCH: ${{ matrix.arch }}
+      BUILD_LOGLEVEL: verbose
+      BUILD_CONFIGURE: '--with-arm-float-abi=hard --with-arm-fpu=vfpv3-d16'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9' # workaround "cannot import name 'Mapping' from 'collections'" error
+      - uses: Lesmiscore/musl-cross-compilers@jockie
+        id: musl
+        with:
+          target: ${{ matrix.target }}
+      - name: Install i386 dev
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt update
+          sudo apt install -y libstdc++-$(c++ -dumpversion)-dev:i386 libc6-dev:i386 g++-multilib
+        if: ${{ matrix.arch == 'arm' }}
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build)
+        env:
+          CC: ${{ steps.musl.outputs.path }}/${{ matrix.target }}-cc
+          CXX: ${{ steps.musl.outputs.path }}/${{ matrix.target }}-c++
+          CC_host: cc
+          CXX_host: c++
+      - run: ${{ steps.musl.outputs.path }}/${{ matrix.target }}-strip nexe/nyuu
+      - run: tar --group=nobody --owner=nobody -cf - -C nexe nyuu ../config-sample.json | xz -9e ${{ matrix.xz_bcj }} --lzma2 > nyuu.txz
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }} 
+          asset_path: ./nyuu.txz
+          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-linux-${{ matrix.name }}.tar.xz
+          asset_content_type: application/octet-stream
+
+  build-mac:
+    name: Build x64 MacOS binary
+    runs-on: macos-latest
+    env:
+      BUILD_ARCH: x64
+      BUILD_LOGLEVEL: verbose
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9' # workaround "cannot import name 'Mapping' from 'collections'" error
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build)
+      - run: strip nexe/nyuu
+      - run: mv nexe/nyuu . && tar --uname '' --gname '' --options='compression-level=9' -Jcf nyuu.txz nyuu config-sample.json
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }} 
+          asset_path: ./nyuu.txz
+          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-macos-x64.tar.xz
+          asset_content_type: application/octet-stream

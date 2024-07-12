@@ -1,0 +1,608 @@
+Nyuu
+Flexible binary usenet poster
+-----------------------------
+
+Usage: nyuu [options] file1 file2 ...
+
+All options take one parameter, except for those marked as a flag option.
+Options can also be set using a custom config file (see `--config` option), in
+which case, flag options, if set, can be unset by prefixing `no-` to the name,
+for example, `--no-ssl` to explicitly disable SSL.
+
+This is a full list of options. Use `--help` to see a summarized version.
+
+Upload Server Options:
+
+  -h,  --host                Host/server to upload to. Prefix with `unix:` to
+                             specify a Unix socket path.
+                             SSL with Unix sockets requires NodeJS >= 0.12
+  -P,  --port                Port to connect to (default 119 or 563 if `--ssl`
+                             is specified)
+  -6,  --ipv6                Connect over IPv6 (flag option)
+                             Requires NodeJS >= 0.12
+       --bind-host           Local address to bind to
+       --tcp-keep-alive      If set, enables TCP keep-alive with the probe
+                             interval set the number specified.
+  -S,  --ssl                 Connect over SSL/TLS (flag option)
+       --ignore-cert         Ignore SSL certificate problems (flag option)
+       --sni-host            SNI host name to send if connecting over SSL
+       --ssl-ciphers         List of SSL ciphers to use, in OpenSSL format
+                             See https://nodejs.org/api/tls.html for defaults
+                             Requires NodeJS >= 0.12
+       --ssl-method          Force SSL/TLS method. For details, see
+                             `secureProtocol` at https://nodejs.org/api/tls.html
+       --ssl-ca              PEM encoded file containing trusted CA for
+                             certificate validation. Can be specified multiple
+                             times. Specifying this option disables the default
+                             CA trust store.
+  -u,  --user                Username to authenticate with
+  -p,  --password            Password to authenticate with
+  -n,  --connections         Number of connections to create for posting
+                             (default 3)
+       --max-upload-rate     Throttle rate at which posts are uploaded at. This
+                             option is in the form {size}/{time}, for example
+                             "10M/5s" which means 10 MiB per 5 seconds. If the
+                             quantity is omitted, 1 is assume, e.g. "2M/s".
+                             The size indicates the burst rate, so "2M/s" means
+                             that 2 MiB must be sent before any throttling can
+                             occur, whilst "10M/5s" allows a 10 MiB burst.
+                             Set to 0 to disable.
+       --timeout             Timeout on server responses (default 30s)
+                             Set to 0 to disable (i.e. wait forever)
+       --connect-timeout     Connect timeout (default 30s)  Set to 0 to disable
+       --post-timeout        Timeout on sending post data (default 120s)
+                             Set to 0 to disable
+       --connect-retries     Number of connection retry attempts (default 1)
+       --reconnect-delay     Delay connection retries (default 15s)
+       --request-retries     Number of request retry attempts (default 5)
+       --retry-on-bad-resp   Treat bad responses as a request failure instead
+                             of a fatal error (flag option)
+       --post-retries        Number of post retry attempts in response to 441
+                             errors (default 1)
+       --post-retry-delay    Delay post retries (default 0s)
+       --post-fail-reconnect Treat posting failures as connection fatal errors.
+                             This causes the connection to be reestablished in
+                             response to this error (flag option)
+                             If set, note that `--post-retries` and
+                             `--post-retry-delay` options will be ignored.
+       --error-teardown      Force teardown of bad connections (flag option).
+                             If unset, bad connections are closed gracefully.
+       --disconnect-timeout  How long to wait for a connection to disconnect
+                             before forcefully tearing it down (default 5s).
+                             Set to 0 to disable
+       --keep-alive          Try to always keep connection alive even if not
+                             needed (flag option).
+
+Article/Post Options:
+
+  -a,  --article-size        Target size of each news post (default 700K). Note
+                             that yEnc makes the actual size larger.
+       --article-line-size   Target bytes per line (default 128)
+  -t,  --comment             Comment to insert before post subject
+       --comment2            Comment to append after post subject
+  -F,  --group-files         Group files by filename, similar to how indexers
+                             would see them. This only affects the file counter
+                             placed in the subject (flag option)
+  -s,  --subject             Subject to use for posts. The following
+                             placeholders are available:
+                                 {filenum}   Current file number in collection
+                                 {0filenum}  Current file number in collection,
+                                             pre-padded with 0's
+                                 {files}     Number of files in collection
+                                 {filename}  File's name
+                                 {fnamebase} File's name without extension;
+                                             uses same logic as `--group-files`
+                                 {filesize}  File's size in bytes
+                                 {fileksize} File's size in KiB, rounded to 2dp
+                                             Replace the 'k' with 'm', 'g', 't'
+                                             for sizes in MiB, GiB and TiB
+                                             respectively, e.g. {filemsize}
+                                 {fileasize} Friendly formatted file size, e.g.
+                                             '4.85 MiB' or '35.1 GiB'
+                                 {part}      Article part number, starts at 1
+                                 {0part}     Article part number, pre-padded
+                                             with 0's to be as long as {parts}
+                                 {parts}     Number of articles for the file
+                                 {size}      Article chunk size (before yEnc)
+                                 {comment}   Value from `--comment`
+                                 {comment2}  Value from `--comment2`
+                                 {timestamp} Unix timestamp of post
+                                 ${rand(N)}  Random text, N characters long
+                             Default is similar to the following:
+                                 {comment} [{0filenum}/{files}] - "{filename}" yEnc ({part}/{parts}) {filesize} {comment2}
+                             Note that {timestamp} and ${rand(N)} are different
+                             for every post. They are not intended to be used
+                             with `--subject`, but for `--message-id` instead.
+                             Also note that this differs from the subject
+                             option present in PowerPost based clients, as this
+                             option specifies the entire subject. Nyuu does not
+                             enforce any format and will not attempt to fix a
+                             badly formed subject.
+       --filename            How on disk file names are transformed into a
+                             'filename' for use in posting. The following
+                             placeholders are available:
+                                 {filename} Full file name and path as
+                                            specified in command supplied
+                                 {basename} Base file name without path
+                                 {pathname} Path component of file name
+                             This also accepts the ${rand(N)} token (see
+                             `--subject`).
+                             Default is `{basename}` which effectively
+                             discards path names.
+                             Note that this option has no effect on files not
+                             sourced from disk.
+  -f,  --from                Shortcut for `-H From=...`
+                             Defaults to 'username <username@host>', where
+                             these values are sourced from the local system.
+  -g,  --groups              Shortcut for `-H Newsgroups=...`
+                             Separate multiple groups with commas, without any
+                             spaces.
+                             Defaults to alt.binaries.test
+       --date                Override the Date header, Message-ID timestamp,
+                             and timestamps for generated NZBs, with specified
+                             date. This can be useful if you wish to expose
+                             less timing information (or obfuscate your
+                             timezone). Can use the special value 'now' to
+                             refer Nyuu's start time. If unset (default), will
+                             use the time at which each post is encoded. This
+                             differs from 'now' in that it is not a fixed
+                             timestamp across the whole run.
+       --message-id          Format of generated Message-ID. See `--subject`
+                             for available placeholders.
+                             Default is similar to: ${rand(24)}-{timestamp}@nyuu
+       --keep-message-id     Don't randomize Message-ID every time the post is
+                             submitted. (flag option)
+  -H,  --header              Specify an NNTP header in either of these forms:
+                                 -H "MyHeader: MyValue"
+                                 -H MyHeader=MyValue
+                                 -H MyHeader
+                             The first two set MyHeader to MyValue, whilst the
+                             third unsets the header MyHeader.
+                             This option can be specified multiple times. Note
+                             that specifying the same header more than once is
+                             currently not supported.
+                             Tokens listed in the `--subject` option can be used
+                             in the header value.
+       --yenc-name           Override the value of the 'name' field in the yEnc
+                             header. This option accepts the same tokens as
+                             `--subject`, except for {size}, {timestamp}, {part}
+                             and {0part}.
+                             Default is `{filename}`
+       --article-encoding    Character encoding used in article/yEnc headers.
+                             Also affects NNTP commands. Accepted values are
+                             `ascii`, `latin1` and `utf8` (default `utf8`)
+
+Post Check Options:
+
+  You can prefix any of the options from the above "Upload Server Options"
+  section, with `--check-` to override that behaviour on these checking
+  connections. For example, `--check-host` overrides the `--host` parameter,
+  making Nyuu perform post checking on a different host. `--check-post-retries`
+  is unavailable as no posting is performed on these connections.
+
+  -k,  --check-connections   Number of connections to create for post checking
+                             (default 0). Set to 1 to enable checking. Higher
+                             numbers of connections are only useful if post
+                             checking is bottlenecking the rest of the process.
+                             Note that the total number of connections spawned
+                             equals this number + `--connections`
+       --check-tries         Maximum number of check attempts to perform.
+                             A value of 0 disables post checking. (default 2)
+       --check-delay         Initial delay after posting before performing
+                             first check (default 5s)
+       --check-retry-delay   Delay for check retries, if a check fails
+                             (default 30s). Not used if `--check-tries` < 2
+       --check-post-tries    Maximum number of attempts to re-post articles
+                             that the post check could not find. Set to 0 to
+                             disable re-posting articles (default 1)
+       --check-queue-size    Max number of articles queued for checking.
+                             Posting will stall if the number of articles to be
+                             checked exceeds this number. Default 10000.
+
+Other Upload/Check Options:
+
+  -e,  --skip-errors         Continue processing regardless of specified
+                             errors. By default, Nyuu stops on all errors. You
+                             can specify `--skip-errors all` to skip all
+                             skippable errors, otherwise a comma separated list
+                             of the following should be specified:
+                                 post-timeout: post request timed out; if set,
+                                               assumes post was successful
+                                 post-reject: server rejects sent post; if set,
+                                              assume post was successful
+                                 post-fail: posting failed for any reason; if
+                                            set, post is skipped
+                                 check-timeout: check request timed out; if set
+                                                assume check was successful
+                                 check-missing: post checking fails to find the
+                                                posted article; assume success
+                                 check-fail: check failed for any reason; if
+                                             set, assume success
+                                 connect-fail: connect/login failed for any
+                                               reason; if set, ignore failed
+                                               connections
+                             Note that for requests that are retried (posting),
+                             only the last result is considered.
+                             Also note: Nyuu will exit with return code 32
+                             instead of 0 if the process completes and errors
+                             were skipped.
+       --post-error-limit    If specified, and errors are being skipped with
+                             `--skip-errors`, will limit the number of post
+                             errors that are tolerated before aborting the post
+                             process.
+       --use-lazy-connect    Only create connections when necessary and prefer
+                             using as few as possible (flag option).
+       --on-post-timeout     A list of actions to take in response to a post
+                             request timing out. Available actions are:
+                                 retry: re-send the post (default
+                                        `--request-retries` times)
+                                 strip-hdr=X: remove the header "X" and retry
+                                 ignore: assume post is successful and continue
+                                         - no further actions will be tried.
+                                         Note that `--skip-errors post-timeout`
+                                         will have no effect if this is set
+                             List is comma separated; after all actions have
+                             been tried, the post will fail. If this option is
+                             supplied, `--request-retries` will not be used for
+                             posts. Example usages:
+                               --on-post-timeout retry,retry,ignore
+                                   Retry the post up to two times on timeout,
+                                   then just assume success
+                               --on-post-timeout retry,strip-hdr=User-Agent,retry
+                                   1st timeout: retry post
+                                   2nd timeout: remove the User-Agent header,
+                                   then retry
+                                   3rd timeout: retry post (header still
+                                   removed)
+                                   4th timeout: give up and throw error
+                             Note: removed headers stay removed, even when the
+                             post is re-posted due to a check failure.
+       --post-method         Command used for posting articles. Supported
+                             commands listed below. Default is POST
+                                 POST
+                                 IHAVE
+                                 XREPLIC
+                                 TAKETHIS
+                             Warning: XREPLIC only uses first specified group
+                             and randomly generated article number
+       --use-ihave           Alias for `--post-method IHAVE` (flag option)
+                             Option is deprecated
+       --check-group         Checking connections will be set to this group.
+                             Some servers seem to want one set, otherwise
+                             checking fails. If you set one, use a valid group
+                             that you're not posting to, such as "bit.test"
+
+NZB Output Options:
+
+  -o,  --out                 If supplied, will write NZB to this file
+                             Can be '-' which writes the NZB to stdout
+                             You can also pipe this into the stdin of another
+                             process by prefixing a command with `proc://`, for
+                             example: `-o 'proc://cat>out.nzb'`, which is the
+                             same as using `-o- | cat>out.nzb`. The stdout and
+                             stderr of the process is discarded.
+                             The following tokens are also supported (see
+                             `--subject` for details):
+                                 {filenum}
+                                 {0filenum}
+                                 {files}
+                                 {filename}
+                                 {fnamebase}
+                                 {filesize}
+                                 {fileksize} also {filemsize} etc
+                                 {fileasize}
+                                 {part} (always is 1)
+                                 {0part}
+                                 {parts}
+                             If tokens are used, multiple NZB files may be
+                             created (or multiple processes spawned if proc://
+                             is used)
+                             Nyuu can also pipe to a specified fd if prefixed
+                             with fd:// (requires NodeJS >= 0.12), i.e.
+                             `fd://1` being a shortcut for stdout.
+  -O,  --overwrite           If NZB exists, overwrite it, otherwise will error
+                             (flag option)
+       --nzb-del-incomplete  Remove NZB file if Nyuu exits without finishing.
+                             Note: deletion may not occur in the event of a
+                             crash. (flag option)
+       --nzb-file-mode       Strategy for writing NZB files. Options are:
+                                 stream: stream output to file (default)
+                                 defer: write file only at end, in one go
+                                 temp: stream to temp file, then rename at end
+       --minify              Minify outputted NZB (flag option)
+       --nzb-compress        Compress outputted NZB. Can be gzip, zlib, deflate
+                             or brotli. (brotli requires NodeJS >= 11.7.0)
+       --nzb-compress-level  Compression level (0-9) to use. Default is 6
+                             For Brotli, range is 0-11, default being 11
+       --nzb-title           A human-readable identifiable title for the
+                             contents of the NZB
+                             Shortcut for `-M title=...`
+       --nzb-tag             An attribute of the NZB contents, such as "SD"
+                             Can be specified multiple times
+                             Shortcut for `-M tag=...`
+       --nzb-category        Suggested category as used by your indexing
+                             service (preferrably one, but can be specified
+                             multiple times)
+                             Shortcut for `-M category=...`
+       --nzb-password        Attach a password to this NZB if its contents
+                             requires one. Can be specified multiple times
+                             if there are multiple passwords
+                             Shortcut for `-M password=...`
+  -M,  --meta                Add a <meta> tag to the NZB. See `--header` option
+                             above for syntax details; note that tokens are
+                             unavailable.
+       --nzb-encoding        Character encoding used in the NZB (default utf-8)
+                             See the following for a list of valid encodings:
+                             https://nodejs.org/api/buffer.html#buffer_buffers_and_character_encodings
+       --nzb-subject         Override the subject specified in the NZB. By
+                             default, Nyuu uses the Subject header sent for the
+                             first article of each file. If you want the
+                             subject specified in the NZB to differ from that
+                             uploaded, use this option.
+                             This option supports the same tokens as `--out`.
+                             In addition, {value} can be used to obtain the
+                             value from the header.
+                             Default is {value}
+       --nzb-poster          Override the poster specified in the NZB, which,
+                             is taken from the From header by default. Details
+                             are the same as `--nzb-subject` described above.
+                             Default is {value}
+
+Advanced Tuning Options:
+
+       --disk-req-size       Disk read request size (default
+                             roundup(1M, `--article-size`))
+       --disk-buf-size       Number of requests to read-ahead (default 1). Set
+                             to 0 to disable read-ahead buffering.
+       --nzb-cork            Cork (buffer) all NZB output (flag option).
+                             Requires NodeJS >= 0.12
+       --post-queue-size     Max number of buffered articles for posting
+                             (default min(round(`--connections`*0.5)+2,25))
+       --check-queue-cache   Max number of articles to cache in the check queue
+                             (default 5, or if un-seekable streams are present,
+                             min(`--connections`*8, 100)). Cache is not used if
+                             `--check-post-tries` is 0. Caching prevents
+                             articles from being re-read off disk if reposting
+                             is necessary. Note that if un-seekable streams are
+                             present, this option will limit the max number of
+                             articles that can be queued for checking, as these
+                             posts cannot be dropped from cache.
+       --post-chunk-size     Limit upload chunk size to specified amount. Set
+                             to 0 to disable (default 192K if
+                             `--max-upload-rate` not specified)
+       --use-post-pool       Use a buffer pool to improve memory management.
+                             Buffers are pre-allocated, which can also improve
+                             performance, but can increase memory usage.
+                             If not enabled, will rely on V8's GC to clean up
+                             buffers. Default is enabled, and is a flag option.
+                             Use `--no-use-post-pool` to disable the buffer
+                             pool.
+       --connection-threads  Number of threads to distribute connections over.
+                             If set, posting connections will be allocated
+                             evenly across the specified number of threads. A
+                             value of 0 disables migrating connections to
+                             threads, using default NodeJS behaviour of
+                             handling connections on the main thread.
+                             Running connections in separate threads is mostly
+                             useful if TLS/SSL is enabled but connection speed
+                             is being limited by how fast one CPU core can
+                             encrypt data.
+                             This option requires NodeJS >= 11.7 or NodeJS >=
+                             10.5 with `--experimental-worker` flag set.
+                             `--max-upload-rate` is not supported with
+                             connection threading.
+                             Default 0
+       --preload-modules     Preload modules into Node's module cache before
+                             starting (flag option). This is mostly a
+                             workaround to Node's shortcomming of not being
+                             able to load modules asynchronously. Usually is
+                             slower, but may be useful if the CPU or disk is
+                             overloaded.
+
+Other Options:
+
+       --dump-failed-posts   Write out articles that fail to post to this
+                             location. Message-ID will be appended to this to
+                             get the file name. This is a debugging feature
+                             and should not be used unless needed.
+       --input-raw-posts     Treat input files as raw posts to be uploaded
+                             (flag option). All options for Articles/Posts, NZB
+                             output and Input will be ignored, as well as
+                             `--disk-*` options. `--keep-message-id` option is
+                             also implied (use `--no-keep-message-id` to
+                             disable).
+                             This is the counterpart to `--dump-failed-posts`
+                             as it can be used to re-post these failed posts.
+       --delete-raw-posts    Delete successfully posted raw articles (flag
+                             option). This only has any effect if the
+                             `--input-raw-posts` flag is specified.
+  -E,  --token-eval          For all options which accept tokens (except
+                             `--copy-input`), switches to an alternative
+                             evaluation strategy, where the value is treated as
+                             a Javascript template string. Note that variables
+                             starting with '0' are not available.
+                             Example value for `--subject`:
+                                 ${filename}: part ${part-1} of ${parts}
+                             WARNING: as the value is wrapped in a Javascript
+                             template string (backticks), without escaping,
+                             care must be taken when using backticks and
+                             backslashes. For example, the following will cause
+                             a syntax error:
+                                 --from 'A`nt ${Date.now()}'
+                             The backtick above needs to be escaped with a
+                             backslash, like in a template string.
+                             NOTE: this syntax and rules are not considered
+                             final, and may change in future Nyuu releases
+                             This option takes no values. Requires NodeJS >= 4
+
+UI Options:
+
+  -l,  --log-level           Controls the output verbosity, value can be:
+                                 0: completely silent (if command parsed)
+                                 1: only show errors
+                                 2: show warnings
+                                 3: show information (default)
+                                 4: show debugging info
+  -v,  --verbose             Alias for `-l4` (flag option)
+  -q,  --quiet               Alias for `-l2` (flag option)
+       --colorize            Enable colors in terminal output (flag option)
+                             Enabled by default if stderr is connected to a TTY
+  -T,  --log-time            Add timestamps to log entries (flag option)
+       --progress            Progress/status display control.
+                             Value can be one of the below; if parameters are
+                             needed, they are appended onto the end, separated
+                             by a colon
+                                 stderr: output a progress indicator to stderr
+                                 stderrx: as above, but alternative format with
+                                          more information
+                                 stdout: same as stderr but output to stdout
+                                 stdoutx: same as stderrx but output to stdout
+                                 log: output log entries every 60s showing
+                                      progress. Interval can be changed via the
+                                      parameter
+                                 tcp: start a TCP server which will spit out
+                                      status information on connect, then close
+                                      the connection
+                                 http: start a HTTP server which returns status
+                                       information
+                             For both tcp and http options, you can specify a
+                             host:port combo, or unix:/path/to/socket. If
+                             unspecified, will default to listening on all
+                             interfaces, on a random port.
+                             This flag can be specified multiple times.
+                             Default is `--progress stderr` if verbosity >= 3;
+                             specify `--progress none` to suppress this.
+                             Examples:
+                               --progress log:30s
+                                   Logs progress every 30 seconds
+                               --progress http:[2001::1]:1234
+                                   Start HTTP server on 2001::1 port 1234
+                               --progress tcp:localhost
+                                   Start TCP server on localhost on random port
+  -C,  --config              Use a custom configuration file, see
+                             config-sample.json for an example. The options
+                             correspond with the command arguments documented
+                             in this help file (full options only, short
+                             aliases aren't supported).
+                             Nyuu also accepts a complex config file, see
+                             config.js for an example.
+                             SECURITY WARNING: do not load untrusted config
+                             files as they can be malicious
+  -?,  --help                Display a summarized list of options (flag option)
+       --help-full           Display this help screen (flag option)
+       --version             Print application version number (flag option)
+       --package-info        Print detailed package/NodeJS info (flag option)
+
+Input Files:
+
+  Additional arguments are taken as files to be posted. Directories can be
+  specified as well, in which case all files inside are processed according
+  to the following options:
+
+  -r,  --subdirs             How directories should be handled, can be:
+                                 skip: ignore nested files
+                                 include: include files in specified
+                                          directories without recursion
+                                          (default)
+                                 keep: upload all files in sub-directories
+                                       (with recursion)
+  -L,  --skip-symlinks       If specified, all symbolic links will be ignored.
+                             Note that this affects file symlinks as well as
+                             directory traversal (if `--subdirs=keep` is
+                             specified). By default, all symlinks are followed.
+                             This option takes no values.
+
+  Alternatively, a list of files can be supplied, with the following options:
+
+  -i,  --input-file          Supply a text file which lists files, separated by
+                             newlines, to be included as input. Can be `-` to
+                             read from stdin, or a command prefixed with
+                             proc:// to read from the stdout of specified
+                             process (example: `proc://cat somefile.txt`). Can
+                             also be an fd prefixed with fd:// (requires NodeJS
+                             >= 0.12), i.e. `fd://0` is an alias for stdin.
+                             Can be specified multiple times.
+  -0,  --input-file0         Same as the `--input-file` option, except files
+                             are separated by null characters instead of
+                             newlines.
+       --input-file-enc      Encoding used on all specified input files. Must
+                             be a NodeJS recognised encoding, which includes
+                             `utf8`, `utf16le` and `latin1`. Default is `utf8`.
+                             Note that BOMs will not be interpreted.
+
+  Nyuu also supports piping inputs from a command, however, as yEnc requires
+  knowing exact file sizes in advance, this will need to be specified. The
+  syntax for specifying a process input is as follows:
+  
+    procjson://"[name]",[size_in_bytes],"[command]"
+  
+  After the prefix, this is actually a 3 element JSON encoded array, where the
+  square brackets are optional.
+  [name] refers to the filename that will be used, it is your responsibility
+  to ensure that there are no duplicates. [size_in_bytes] is the exact size of
+  the data to be emitted from [command], in bytes. [command] is the command
+  that will be executed, and its stdout will be uploaded. The stderr of this
+  process is discarded, and nothing will be sent to stdin. If a number is
+  supplied to [command] instead of a string, data will be read from the
+  specified file descriptor rather than executing a process (requires NodeJS
+  >= 0.12).
+  Note that quotation marks and some other special characters may need to be
+  escaped with backslashes, as per JSON encoding rules.
+  
+  For example, here's an elaborate way to upload the 6KB image, trollface.jpg
+  as moe_kyun.jpg (note that `cat` is assumed to be the utility to read a file
+  to stdout):
+    nyuu -h 0 'procjson://"moe_kyun.jpg",6144,"cat trollface.jpg"' 
+
+  Nyuu also supports copying input files to a file or process. The purpose of
+  this feature is to send the data to somewhere else without incurring the cost
+  of an additional disk read. This feature is currently EXPERIMENTAL.
+  The following options are available for copying input:
+  
+  -I,  --copy-input          Copy each input into specified file or stdin of
+                             specified process. See `--out` for syntax.
+                             Special placeholders which can be used:
+                                 {filename}: upload name of the file (no path)
+                                 {size}: size of file in bytes
+                             For example, the following can be used to
+                             generate a list of MD5 hashes of the input files,
+                             on Linux, without re-reading files off disk:
+                               `--I "proc://echo `md5sum|sed s/-//` {filename} >>md5list`
+                             WARNING: {filename} isn't sanitized in any way, so
+                             take care when using it, especially when using it
+                             in a command!
+       --copy-include        Regular expression filter of which files to copy.
+                             Only file names which match this filter will be
+                             copied. Default ".*" (include all files).
+       --copy-exclude        Regular expression exclusion filter over files to
+                             copy. File names matching this expression won't
+                             be copied. Default ".^" (no excluded files).
+       --copy-queue-size     Maximum unconsumed buffer size for copied inputs.
+                             If this buffer fills up, processing will slow down
+                             until the other process consumes its piped data.
+                             This value applies individually  to each input
+                             copied. Set to 0 for no limit. (default 4)
+                             Note that this is somewhat connected to
+                             `--post-queue-size`
+
+Exit codes:
+
+  The end result can be determined from scripts by checking the exit code of
+  the run. The following exit codes are used by Nyuu:
+
+     0: no error occurred
+     1: invalid command/usage; for NodeJS >= 0.11, also used for crashes
+     8: for NodeJS version 0.10, process crashed
+    32: process completed, but with errors
+    33: process terminated due to an error
+
+------------------
+Examples
+
+  nyuu -h example.com some_file
+      Uploads some_file to the NNTP server at example.com
+
+  nyuu -h news.example.com -S -u cat -p nyahaha -n3 -f 'Cat <eager-poster@computer>' -g alt.binaries.multimedia -o my_cat.nzb my_cat.mp4
+      Uploads my_cat.mp4 to NNTPS server at news.example.com in group
+      alt.binaries.multimedia. Upload is performed using 3 connections. 
+      The from username is specified, and Nyuu will output an NZB, my_cat.nzb.

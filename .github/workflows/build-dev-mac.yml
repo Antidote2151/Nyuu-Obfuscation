@@ -1,0 +1,26 @@
+name: Build dev MacOS binary
+on:
+  workflow_dispatch:
+
+jobs:
+  build-dev-mac:
+    name: Build x64 MacOS binary
+    runs-on: macos-latest
+    env:
+      BUILD_ARCH: x64
+      BUILD_LOGLEVEL: verbose
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9' # workaround "cannot import name 'Mapping' from 'collections'" error
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build)
+      - run: strip nexe/nyuu
+      - run: mv nexe/nyuu . && tar --uname '' --gname '' --options='compression-level=9' -Jcf nyuu.txz nyuu config-sample.json
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./nyuu.txz
+          name: nyuu-${{ github.ref_name }}-macos-x64.7z
+          retention-days: 5
