@@ -4,7 +4,8 @@ on:
     types: [published]
   push:
     tags:
-    - v*.*.*
+        - v*.*.*
+  workflow_dispatch:
 
 jobs:
   build-win32:
