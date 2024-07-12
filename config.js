@@ -96,9 +96,9 @@ groupFiles: false, // group "similar" files (based on filename) together into su
 // Note: for Message-ID (if the keepMessageId option is true), the function should return strings that wont't vary in length for the same post, as Nyuu requires same length Message IDs to be used when re-generating the ID
 postHeaders: {
 	// required headers
-	'Message-ID': '{rand(24)}@{rand(5)}.{rand(3)}', // default: auto-generated
-	Subject: '{rand(32)}', // if null, a default Subject is used
-	From: '{rand(14)}', // 'A Poster <a.poster@example.com>'
+	'Message-ID': null, // default: auto-generated
+	Subject: null, // if null, a default Subject is used
+	From: (process.env.USER || process.env.USERNAME || 'user').replace(/[<>]/g, '') + ' <' + ((process.env.USER || process.env.USERNAME || '').replace(/[" (),:;<>@]/g, '') || 'user') + '@' + (require('os').hostname().replace(/[^a-z0-9_.\-]/ig, '').match(/^([a-z0-9][a-z0-9\-]*\.)*[a-z0-9][a-z0-9\-]*$/i) || ['nyuu.uploader'])[0].replace(/^([^.])+$/, '$1.localdomain') + '>', // 'A Poster <a.poster@example.com>'
 	Newsgroups: 'alt.binaries.test', // comma seperated list
 	Date: null, // if null, value is auto-generated from when post is first generated
 	Path: '',
@@ -123,7 +123,7 @@ nzb: {
 		// here you can override values for NZB <file> entries
 		// if unset, will use the NNTP header values from the first segment of the file
 		// can be set to a function, which will be called with args(filenum, filenumtotal, filename, size, part [always 1], parts, header_value)
-		subject: '{filename}', // Subject header
+		subject: null, // Subject header
 		poster: null, // From header
 		date: null, // timestamp when post was generated (note: will be interpreted as a Javascript date)
 		groups: null // Newsgroups header
@@ -176,7 +176,7 @@ diskBufferSize: 1, // number of chunks to buffer
 articleQueueBuffer: null, // number of buffered articles; default is min(round(numConnections*0.5),25)
 
 /** Other Options **/
-subdirs: 'keep', // can be 'skip', 'include' or 'keep'; note that it affects directly passed directories too
+subdirs: 'include', // can be 'skip', 'include' or 'keep'; note that it affects directly passed directories too
 skipSymlinks: false, // ignore all symlinks
 // filenames will be transformed according to the following setting, which is a function that will have the file's path and name passed to it
 // the default is to keep the filename component only, which essentially flattens all files into a single directory
