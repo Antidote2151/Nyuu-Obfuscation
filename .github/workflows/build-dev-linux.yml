@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.9' # workaround "cannot import name 'Mapping' from 'collections'" error
+          python-version: '3.9.12' # workaround "cannot import name 'Mapping' from 'collections'" error
       - uses: Lesmiscore/musl-cross-compilers@jockie
         id: musl
         with:
