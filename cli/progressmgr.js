@@ -82,34 +82,6 @@ var writeState = function(uploader, startTime, conn, debug) {
 		var handles = cliUtil.activeHandleCounts();
 		if(handles)
 			conn.write('Active Handles: ' + cliUtil.activeHandlesStr(handles[0]) + '\r\n');
-		conn.write('\r\n');
-	}
-	
-	conn.write('===== Process Resource Usage =====\r\n');
-	var resourceUsage = null;
-	if(process.resourceUsage)
-		resourceUsage = process.resourceUsage();
-	if(process.cpuUsage) {
-		var usage = resourceUsage ?
-			{user: resourceUsage.userCPUTime, system: resourceUsage.systemCPUTime} :
-			process.cpuUsage();
-		var processTime100us = Math.max((now - startTime) / 10, 1);
-		var percUser = Math.round(usage.user / processTime100us) / 100;
-		var percSys = Math.round(usage.system / processTime100us) / 100;
-		usage.user = Math.round(usage.user/10000) / 100;
-		usage.system = Math.round(usage.system/10000) / 100;
-		conn.write('CPU usage: ' + usage.user + 's user (' + percUser + '%) + ' + usage.system + 's system (' + percSys + '%)\r\n');
-	}
-	var memUsage = process.memoryUsage();
-	var muStr = [];
-	for(var k in memUsage) {
-		muStr.push(cliUtil.friendlySize(memUsage[k]) + ' ' + k);
-	}
-	conn.write('Current memory usage: ' + muStr.join(', ') + '\r\n');
-	
-	if(resourceUsage) {
-		conn.write('Peak memory RSS: ' + cliUtil.friendlySize(resourceUsage.maxRSS * 1024) + '\r\n');
-		conn.write('Filesystem block ops: ' + resourceUsage.fsRead + ' read + ' + resourceUsage.fsWrite + ' write\r\n');
 	}
 };
 
