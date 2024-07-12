@@ -13,7 +13,7 @@ jobs:
           xz_bcj: --x86
           name: amd64
     name: Build ${{ matrix.name }} dev Linux binary
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       BUILD_ARCH: ${{ matrix.arch }}
       BUILD_LOGLEVEL: verbose
