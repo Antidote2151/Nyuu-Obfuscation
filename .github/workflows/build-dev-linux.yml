@@ -12,15 +12,6 @@ jobs:
           arch: x64
           xz_bcj: --x86
           name: amd64
-        - target: aarch64-linux-musl
-          arch: arm64
-          xz_bcj: 
-          name: aarch64
-        # disabled due to compiler crashing
-        #- target: armv7l-linux-musleabihf
-        #  arch: arm
-        #  xz_bcj: --arm
-        #  name: armhf
     name: Build ${{ matrix.name }} dev Linux binary
     runs-on: ubuntu-latest
     env:
