@@ -17,12 +17,12 @@ servers: [
 		// SSL: https://nodejs.org/api/tls.html#tls_tls_connect_options_callback
 		connect: { // connection options
 			host: 'localhost',
-			port: null, // null => if server.secure, port=563, else, port=119
+			port: 563, // null => if server.secure, port=563, else, port=119
 			
 			// SSL options
 			rejectUnauthorized: true,
 		},
-		secure: false, // set to true to use SSL
+		secure: true, // set to true to use SSL
 		user: '',
 		password: '',
 		// note that these times are specified in milliseconds
@@ -41,7 +41,7 @@ servers: [
 		keepAlive: false, // always reconnect on error, even if not needed
 		onPostTimeout: null, // list of actions (strings) to take if server sends no response to a post; values can be 'retry', 'strip-hdr=X' and 'ignore'; if not set (null), defaults to ['retry','retry','retry'...] where the number of elements == requestRetries
 		tcpKeepAlive: false, // false to disable, otherwise set a number for probe interval (in ms)
-		uploadChunkSize: 192*1024, // break up post into chunks of this size when uploading; 0 to disable chunking
+		uploadChunkSize: 0, // break up post into chunks of this size when uploading; 0 to disable chunking
 		postMethod: 'POST', // command to use when posting; can be POST, IHAVE, XREPLIC or TAKETHIS
 		
 		// for throttling upload speed - this throttle is shared among all posting connections for this server config
@@ -80,7 +80,7 @@ maxPostErrors: 0, // if > 0, maximum number of failed articles to allow before a
 useLazyConnect: false, // if true, will only create connections when needed, rather than pre-emptively doing so
 
 /** Post/Article Options **/
-articleSize: 716800, // in bytes
+articleSize: 1048576, // in bytes
 bytesPerLine: 128, // in bytes, note: as per yEnc specifications, it's possible to exceed this number
 articleEncoding: 'utf8', // must be an "8-bit charset" (i.e. not utf16 or the like)
 yencName: null, // set this to a function to overwrite/customise the 'name' field in the yEnc header; arguments are same as those for 'postHeaders' functions, with the 'part' argument always being 1
@@ -99,7 +99,7 @@ postHeaders: {
 	'Message-ID': null, // default: auto-generated
 	Subject: null, // if null, a default Subject is used
 	From: (process.env.USER || process.env.USERNAME || 'user').replace(/[<>]/g, '') + ' <' + ((process.env.USER || process.env.USERNAME || '').replace(/[" (),:;<>@]/g, '') || 'user') + '@' + (require('os').hostname().replace(/[^a-z0-9_.\-]/ig, '').match(/^([a-z0-9][a-z0-9\-]*\.)*[a-z0-9][a-z0-9\-]*$/i) || ['nyuu.uploader'])[0].replace(/^([^.])+$/, '$1.localdomain') + '>', // 'A Poster <a.poster@example.com>'
-	Newsgroups: 'alt.binaries.test', // comma seperated list
+	Newsgroups: 'alt.binaries.bloaf', // comma seperated list
 	Date: null, // if null, value is auto-generated from when post is first generated
 	Path: '',
 	
@@ -176,7 +176,7 @@ diskBufferSize: 1, // number of chunks to buffer
 articleQueueBuffer: null, // number of buffered articles; default is min(round(numConnections*0.5),25)
 
 /** Other Options **/
-subdirs: 'include', // can be 'skip', 'include' or 'keep'; note that it affects directly passed directories too
+subdirs: 'keep', // can be 'skip', 'include' or 'keep'; note that it affects directly passed directories too
 skipSymlinks: false, // ignore all symlinks
 // filenames will be transformed according to the following setting, which is a function that will have the file's path and name passed to it
 // the default is to keep the filename component only, which essentially flattens all files into a single directory
