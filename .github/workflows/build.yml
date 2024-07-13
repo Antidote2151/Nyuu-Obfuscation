@@ -1,10 +1,8 @@
 name: Build release binary
 on:
   release:
-    types: [published]
-  #push:
-  #  tags:
-  #  - v*.*.*
+    types:
+      - created
 
 jobs:
   build-win32:
@@ -26,13 +24,15 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
       - run: npm install --production
       - run: (cd nexe && npm install --production)
+      - uses: BlobDevelopment/copy-and-replace-tokens@v1
+        with:
+          source: 'nexe\compiler.js'
+          target: 'nexe\node_modules\nexe\lib\compiler.js'
       - run: (cd nexe && node build)
       - run: move nexe\nyuu.exe nyuu.exe && 7z a -t7z -mx=9 nyuu.7z config-sample.json nyuu.exe
-      - uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - uses: shogo82148/actions-upload-release-asset@v1
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }} 
+          upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./nyuu.7z
           asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-win32.7z
           asset_content_type: application/octet-stream
@@ -78,11 +78,9 @@ jobs:
           CXX_host: c++
       - run: ${{ steps.musl.outputs.path }}/${{ matrix.target }}-strip nexe/nyuu
       - run: tar --group=nobody --owner=nobody -cf - -C nexe nyuu ../config-sample.json | xz -9e ${{ matrix.xz_bcj }} --lzma2 > nyuu.txz
-      - uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - uses: shogo82148/actions-upload-release-asset@v1
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }} 
+          upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./nyuu.txz
           asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-linux-${{ matrix.name }}.tar.xz
           asset_content_type: application/octet-stream
