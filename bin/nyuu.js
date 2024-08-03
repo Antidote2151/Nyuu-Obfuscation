@@ -229,8 +229,8 @@ var randStr = function(min, max) {
 	var len = Math.floor(Math.random() * (max - min + 1)) + min;
 	var rnd = '';
 	var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	while(len--) {
-		rnd += chars[(Math.random() * chars.length) | 0];
+	while (len--) {
+		rnd += chars[Math.floor(Math.random() * chars.length)];
 	}
 	return rnd;
 };
