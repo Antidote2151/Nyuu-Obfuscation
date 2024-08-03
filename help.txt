@@ -32,6 +32,9 @@ Article/Post Options:
   -g,  --groups              Comma separated list of groups to post to. Do
                              not add spaces between commas.
                              Defaults to alt.binaries.test
+  --obfuscate-articles       Randomize yenc header filename for every article
+                             with a randomized 32-62 hex string and randomly 
+                             generates a date from the last 24 hours. (flag option)
 
 Post Check Options:
 

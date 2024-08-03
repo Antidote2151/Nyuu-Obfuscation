@@ -1,4 +1,10 @@
-A small variation of Nyuu was the article Obfuscate. Also removed the user agent.
+A small variation of Nyuu was the article Obfuscate. 
+This fork has the following additional functions:
+
+- Randomize yenc header filename for every article
+- Randomize date for every article
+- Remove User Agent
+
 In my opinion, this gives you the greatest possible privacy when posting on Usenet.
 
 > [!CAUTION]
