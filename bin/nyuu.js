@@ -279,7 +279,7 @@ var _mainTransform = function(rx, area, v) {
 					case 'value': return extra;
 					default:
 						// rand(n)
-						return randStr(a1, a2 !== undefined ? parseInt(a2, 10) : undefined);
+						return randStr(parseInt(a1, 10), a2 !== undefined ? parseInt(a2, 10) : undefined);
 				}
 			});
 		};
@@ -334,7 +334,7 @@ var filenameTransformFn = function(area, v) {
 						return filename;
 					default:
 						// rand(n)
-						return randStr(a1, a2 !== undefined ? parseInt(a2, 10) : undefined);
+						return randStr(parseInt(a1, 10), a2 !== undefined ? parseInt(a2, 10) : undefined);
 				}
 			});
 		};
