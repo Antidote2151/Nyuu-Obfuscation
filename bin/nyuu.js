@@ -215,12 +215,23 @@ var servOptMap = {
 };
 
 var argv;
+var randStr = function(min, max) {
+	if (max === undefined) {
+		max = min;
+	}
 
-var randStr = function(len) {
+	if (min > max) {
+		let temp = min;
+		min = max;
+		max = temp;
+	}
+	
+	var len = Math.floor(Math.random() * (max - min + 1)) + min;
 	var rnd = '';
 	var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	while(len--)
+	while(len--) {
 		rnd += chars[(Math.random() * chars.length) | 0];
+	}
 	return rnd;
 };
 function UserScriptError(message, area) {
