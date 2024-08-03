@@ -255,7 +255,7 @@ var _mainTransform = function(rx, area, v) {
 	if(!argv['token-eval']) {
 		if((''+v).search(rx) == -1) return v; // shortcut: if no tokens are used, don't force function evaluation
 		return function(filenum, filenumtotal, filename, filesize, part, parts, extra) {
-			return v.replace(rx, function(m, token, a1) {
+			return v.replace(rx, function(m, token, a1, a2) {
 				switch(token.toLowerCase()) {
 					case 'filenum': return filenum;
 					case '0filenum': return cliUtil.lpad(''+filenum, (''+filenumtotal).length, '0');
@@ -279,7 +279,7 @@ var _mainTransform = function(rx, area, v) {
 					case 'value': return extra;
 					default:
 						// rand(n)
-						return randStr(a1);
+						return randStr(a1, a2);
 				}
 			});
 		};
@@ -314,8 +314,8 @@ var _mainTransform = function(rx, area, v) {
 		return fn.bind(null, cliUtil.friendlySize, argv.comment||'', argv.comment2||'', randStr, UserScriptError);
 	}
 };
-var articleHeaderFn = _mainTransform.bind(null, /\$?\{(0?filenum|files|filename|fnamebase|filesize|file[kmgta]size|0?part|parts|size|comment2?|timestamp|rand\((\d+)\))\}/ig);
-var yencNameFn = _mainTransform.bind(null, /\$?\{(0?filenum|files|filename|fnamebase|filesize|file[kmgta]size|parts|comment2?|rand\((\d+)\))\}/ig);
+var articleHeaderFn = _mainTransform.bind(null, /\$?\{(0?filenum|files|filename|fnamebase|filesize|file[kmgta]size|0?part|parts|size|comment2?|timestamp|rand\((\d+)(?:\,(\d+))?\))\}/ig);
+var yencNameFn = _mainTransform.bind(null, /\$?\{(0?filenum|files|filename|fnamebase|filesize|file[kmgta]size|parts|comment2?|rand\((\d+)(?:\,(\d+))?\))\}/ig);
 var nzbHeaderFn = _mainTransform.bind(null, /\$?\{(0?filenum|files|filename|fnamebase|filesize|file[kmgta]size|0?part|parts|value)\}/ig);
 var RE_FILE_TRANSFORM = /\$?\{(0?filenum|files|filename|fnamebase|filesize|file[kmgta]size|0?part|parts)\}/ig;
 var fileTransformFn = _mainTransform.bind(null, RE_FILE_TRANSFORM);
@@ -324,7 +324,7 @@ var filenameTransformFn = function(area, v) {
 	if(!argv['token-eval']) {
 		var path = require('path');
 		return function(filename) {
-			return v.replace(/\$?\{(filename|basename|pathname|rand\((\d+)\))\}/ig, function(m, token, a1) {
+			return v.replace(/\$?\{(filename|basename|pathname|rand\((\d+)(?:\,(\d+))?\))\}/ig, function(m, token, a1, a2) {
 				switch(token.toLowerCase()) {
 					case 'basename':
 						return path.basename(filename);
@@ -334,7 +334,7 @@ var filenameTransformFn = function(area, v) {
 						return filename;
 					default:
 						// rand(n)
-						return randStr(a1);
+						return randStr(a1, a2);
 				}
 			});
 		};
