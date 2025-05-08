@@ -36,7 +36,7 @@ jobs:
           asset_path: ./nyuu.7z
           asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-win32.7z
           asset_content_type: application/octet-stream
-  
+
   build-linux:
     strategy:
       matrix:
@@ -45,6 +45,10 @@ jobs:
           arch: x64
           xz_bcj: --x86
           name: amd64
+        - target: aarch64-linux-musl
+          arch: arm64
+          xz_bcj: --arm64
+          name: arm64
     name: Build ${{ matrix.name }} Linux binary
     runs-on: ubuntu-latest
     env:
@@ -84,3 +88,58 @@ jobs:
           asset_path: ./nyuu.txz
           asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-linux-${{ matrix.name }}.tar.xz
           asset_content_type: application/octet-stream
+
+  build-macos-arm64:
+    name: Build macOS ARM64 binary
+    runs-on: macos-latest
+    env:
+      BUILD_ARCH: arm64
+      BUILD_LOGLEVEL: verbose
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build)
+      - run: tar --owner=$(id -un) --group=staff -cf - -C nexe nyuu ../config-sample.json | xz -9e > nyuu.txz
+      - uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./nyuu.txz
+          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-mac-arm64.tar.xz
+          asset_content_type: application/octet-stream
+
+  build-macos-x64:
+    name: Build macOS x64 binary
+    runs-on: macos-13  # oder macos-13
+    env:
+      BUILD_ARCH: x64
+      BUILD_LOGLEVEL: verbose
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build)
+      - run: tar --owner=$(id -un) --group=staff -cf - -C nexe nyuu ../config-sample.json | xz -9e > nyuu.txz
+      - uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./nyuu.txz
+          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-mac-x64.tar.xz
+          asset_content_type: application/octet-stream
+
