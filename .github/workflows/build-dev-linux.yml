@@ -5,14 +5,17 @@ on:
 jobs:
   build-dev-linux:
     strategy:
-      fail-fast: false
       matrix:
         include:
-        - target: x86_64-linux-musl
-          arch: x64
-          xz_bcj: --x86
-          name: amd64
-    name: Build ${{ matrix.name }} dev Linux binary
+          - target: x86_64-linux-musl
+            arch: x64
+            xz_bcj: --x86
+            name: amd64
+          - target: aarch64-linux-musl
+            arch: arm64
+            xz_bcj: --arm64
+            name: arm64
+    name: Build ${{ matrix.name }} Linux binary
     runs-on: ubuntu-latest
     env:
       BUILD_ARCH: ${{ matrix.arch }}
@@ -20,19 +23,21 @@ jobs:
       BUILD_CONFIGURE: '--with-arm-float-abi=hard --with-arm-fpu=vfpv3-d16'
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.9' # workaround "cannot import name 'Mapping' from 'collections'" error
       - uses: Lesmiscore/musl-cross-compilers@jockie
         id: musl
         with:
           target: ${{ matrix.target }}
       - name: Install i386 dev
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt update
-          sudo apt install -y libstdc++-$(c++ -dumpversion)-dev:i386 libc6-dev:i386 g++-multilib
-        if: ${{ matrix.arch == 'arm' }}
+          dpkg --add-architecture i386
+          apt update
+          apt install -y libstdc++-$(c++ -dumpversion)-dev:i386 libc6-dev:i386 g++-multilib
+        if: ${{ matrix.arch }} == 'arm'
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - run: npm install --production
       - run: (cd nexe && npm install --production)
       - run: (cd nexe && node build)

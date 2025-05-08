@@ -3,21 +3,54 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-mac:
-    name: Build x64 MacOS binary
+  build-dev-macos-arm64:
+    name: Build macOS ARM64 binary
     runs-on: macos-latest
+    env:
+      BUILD_ARCH: arm64
+      BUILD_LOGLEVEL: verbose
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build)
+      - run: tar --owner=$(id -un) --group=staff -cf - -C nexe nyuu ../config-sample.json | xz -9e > nyuu.txz
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./nyuu.7z
+          name: nyuu-${{ github.ref_name }}-mac-arm64.tar.xz
+          retention-days: 5
+
+  build-dev-macos-x64:
+    name: Build macOS x64 binary
+    runs-on: macos-13  # oder macos-13
     env:
       BUILD_ARCH: x64
       BUILD_LOGLEVEL: verbose
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - run: npm install --production
       - run: (cd nexe && npm install --production)
       - run: (cd nexe && node build)
-      - run: strip nexe/nyuu
-      - run: mv nexe/nyuu . && tar --uname '' --gname '' --options='compression-level=9' -Jcf nyuu.txz nyuu config-sample.json
+      - run: tar --owner=$(id -un) --group=staff -cf - -C nexe nyuu ../config-sample.json | xz -9e > nyuu.txz
       - uses: actions/upload-artifact@v3
         with:
-          path: ./nyuu.txz
-          name: nyuu-${{ github.ref_name }}-macos-x64.7z
-          retention-days: 5
+         path: ./nyuu.7z
+         name: nyuu-${{ github.ref_name }}-mac-x64.tar.xz
+         retention-days: 5

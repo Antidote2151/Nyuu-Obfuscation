@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-win32:
+  build-dev-win32:
     name: Build x86 Windows binary
     runs-on: windows-2019
     env:
@@ -11,12 +11,21 @@ jobs:
       BUILD_LOGLEVEL: verbose
     steps:
       - uses: ilammy/setup-nasm@v1
-      - uses: MatteoH2O1999/setup-python@v3 # https://github.com/actions/setup-python/issues/672
+      - uses: MatteoH2O1999/setup-python@v3
         with:
           python-version: '2.7'
       - uses: actions/checkout@v3
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - run: npm install --production
       - run: (cd nexe && npm install --production)
+      - uses: BlobDevelopment/copy-and-replace-tokens@v1
+        with:
+          source: 'nexe\compiler.js'
+          target: 'nexe\node_modules\nexe\lib\compiler.js'
       - run: (cd nexe && node build)
       - run: move nexe\nyuu.exe nyuu.exe && 7z a -t7z -mx=9 nyuu.7z config-sample.json nyuu.exe
       - uses: actions/upload-artifact@v3
