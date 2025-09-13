@@ -1,3 +1,15 @@
+> **Need a GUI uploader with full obfuscation?**  
+> Check out **Postie** → https://github.com/javi11/postie
+
+### Highlights
+- GUI-based uploader
+- Full obfuscation support
+
+### Link
+- 🔗 **Repository:** https://github.com/javi11/postie
+
+--------
+
 A small variation of Nyuu was the article Obfuscate. 
 This fork has the following additional functions:
 
