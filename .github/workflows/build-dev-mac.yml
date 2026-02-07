@@ -9,6 +9,7 @@ jobs:
     env:
       BUILD_ARCH: arm64
       BUILD_LOGLEVEL: verbose
+      CXXFLAGS: "-Wno-enum-constexpr-conversion -Wno-error"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -20,8 +21,6 @@ jobs:
         env:
           CC: cc
           CXX: c++
-          CXXFLAGS: "-Wno-enum-constexpr-conversion -Wno-error"
-          CPPFLAGS: "-Wno-enum-constexpr-conversion -Wno-error"
       - run: tar --owner=$(id -un) --group=staff -cf - -C nexe nyuu ../config-sample.json | xz -9e > nyuu.txz
       - uses: actions/upload-artifact@v4
         with:
