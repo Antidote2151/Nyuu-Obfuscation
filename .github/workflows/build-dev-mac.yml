@@ -9,7 +9,6 @@ jobs:
     env:
       BUILD_ARCH: arm64
       BUILD_LOGLEVEL: verbose
-      CXXFLAGS: "-Wno-enum-constexpr-conversion -Wno-error"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4

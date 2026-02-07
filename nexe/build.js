@@ -253,6 +253,12 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 				data = data.replace(/('cflags': \[)(\s*'-O3')/, "$1 '-msse2',$2");
 			}
 			
+			// macOS + modern Clang: avoid treating deprecation/widening warnings as errors
+			if(buildOs == 'darwin') {
+				data = data.replace(/('cflags': \[)/, "$1'-Wno-enum-constexpr-conversion', '-Wno-error', ");
+				data = data.replace(/('cflags_cc': \[)/, "$1'-Wno-enum-constexpr-conversion', '-Wno-error', ");
+			}
+			
 			// MSVC - disable debug info
 			data = data.replace(/'GenerateDebugInformation': 'true',/, "'GenerateDebugInformation': 'false',\n'AdditionalOptions': ['/emittoolversioninfo:no'],");
 			
