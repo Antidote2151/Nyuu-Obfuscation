@@ -74,8 +74,14 @@ if(vsSuite) vcbuildArgs.push(vsSuite);
 if(buildOs == 'darwin') {
 	// Clang on recent macOS treats some V8 warnings as errors for Node 12
 	const extraFlags = '-Wno-enum-constexpr-conversion -Wno-error';
-	process.env.CFLAGS = (process.env.CFLAGS ? process.env.CFLAGS + ' ' : '') + extraFlags;
-	process.env.CXXFLAGS = (process.env.CXXFLAGS ? process.env.CXXFLAGS + ' ' : '') + extraFlags;
+	const nodeRoot = path.resolve(nexeBase, nodeVer);
+	const includeFlags = [
+		'-I' + path.join(nodeRoot, 'src'),
+		'-I' + path.join(nodeRoot, 'deps', 'v8', 'include'),
+		'-I' + path.join(nodeRoot, 'deps', 'uv', 'include')
+	].join(' ');
+	process.env.CFLAGS = (process.env.CFLAGS ? process.env.CFLAGS + ' ' : '') + extraFlags + ' ' + includeFlags;
+	process.env.CXXFLAGS = (process.env.CXXFLAGS ? process.env.CXXFLAGS + ' ' : '') + extraFlags + ' ' + includeFlags;
 }
 
 if(process.env.BUILD_CONFIGURE)
