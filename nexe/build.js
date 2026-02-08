@@ -72,8 +72,7 @@ if(parseFloat(nodeVer) >= 10) {
 if(vsSuite) vcbuildArgs.push(vsSuite);
 
 if(buildOs == 'win32') {
-	// Force VS2022 toolset on GitHub-hosted runners (x64 only)
-	process.env.GYP_MSVS_VERSION = '2022';
+	// use default toolset selection (v141 available via workflow install)
 } else {
 	const nodeRoot = path.resolve(nexeBase, nodeVer);
 	const includeFlags = [
@@ -306,12 +305,7 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 		// fix for NodeJS 12 on Windows toolsets
 		async (compiler, next) => {
 			if(parseFloat(nodeVer) >= 12 && parseFloat(nodeVer) < 13 && buildOs == 'win32') {
-				// allow VS2022-only runners by retargeting toolset (x64 only)
-				var data = await compiler.readFileAsync('vcbuild.bat');
-				data = data.contents.toString();
-				data = data.replace('GYP_MSVS_VERSION=2019', 'GYP_MSVS_VERSION=2022');
-				data = data.replace('PLATFORM_TOOLSET=v142', 'PLATFORM_TOOLSET=v143');
-				await compiler.setFileContentsAsync('vcbuild.bat', data);
+				// No-op: rely on GYP_MSVS_TOOLSET_VERSION instead of patching vcxproj files
 			}
 			return next();
 		},

@@ -12,6 +12,8 @@ jobs:
     steps:
       - uses: ilammy/setup-nasm@v1
       - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install VS2017 Build Tools (v141)
+        run: choco install visualstudio2017buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.v141.x86.x64" -y
       - uses: MatteoH2O1999/setup-python@v3 # https://github.com/actions/setup-python/issues/672
         with:
           python-version: '2.7'
