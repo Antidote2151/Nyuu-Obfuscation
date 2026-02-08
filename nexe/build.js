@@ -217,13 +217,19 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 			if(parseFloat(nodeVer) < 12)
 				includeListArr.push('"../cares/include"');
 			var includeList = includeListArr.join(', ');
-			if(/"include_dirs": \[/.test(data)) {
+			if(/"include_dirs": \[/.test(data) || /'include_dirs': \[/.test(data)) {
 				data = data.replace(/"include_dirs": \[([^\]]*)\]/, function(match, existing) {
 					if(existing.includes('../../src')) return match;
 					return '"include_dirs": [' + includeList + ', ' + existing.trim() + ']';
 				});
+				data = data.replace(/'include_dirs': \[([^\]]*)\]/, function(match, existing) {
+					if(existing.includes('../../src')) return match;
+					return "'include_dirs': [" + includeList + ', ' + existing.trim() + ']';
+				});
 			} else {
-				data = data.replace(/"sources": \[/, '"include_dirs": [' + includeList + '],\n      "sources": [');
+				// insert include_dirs into the first target
+				data = data.replace(/("targets"\s*:\s*\[\s*\{)/, '$1\n      "include_dirs": [' + includeList + '],');
+				data = data.replace(/('targets'\s*:\s*\[\s*\{)/, "$1\n      'include_dirs': [" + includeList + '],');
 			}
 			data = data.replace(/"enable_native_tuning%": 1,/, '"enable_native_tuning%": 0,');
 			await compiler.setFileContentsAsync('deps/yencode/binding.gyp', data);
