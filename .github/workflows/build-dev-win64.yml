@@ -9,6 +9,8 @@ jobs:
     env:
       BUILD_ARCH: x64
       BUILD_LOGLEVEL: verbose
+      GYP_MSVS_VERSION: '2017'
+      GYP_MSVS_OVERRIDE_PATH: 'C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\BuildTools'
     steps:
       - uses: ilammy/setup-nasm@v1
       - uses: ilammy/msvc-dev-cmd@v1
