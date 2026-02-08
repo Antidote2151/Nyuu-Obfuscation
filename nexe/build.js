@@ -246,6 +246,13 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 			return next();
 		},
 		
+		// fix zlib fdopen macro clash on modern macOS SDKs
+		async (compiler, next) => {
+			if(buildOs != 'darwin') return next();
+			await compiler.replaceInFileAsync('deps/zlib/zutil.h', /#\s*define\s+fdopen\([^\)]*\)\s+NULL.*$/m, '/* fdopen available on macOS */');
+			return next();
+		},
+		
 		// disable unnecessary executables
 		async (compiler, next) => {
 			await compiler.replaceInFileAsync('node.gyp', /(['"]target_name['"]:\s*['"](cctest|embedtest|fuzz_url|fuzz_env)['"],\s*['"]type['"]:\s*)['"]executable['"]/g, "$1'none'");
