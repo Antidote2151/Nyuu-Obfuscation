@@ -300,15 +300,14 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 			return next();
 		},
 		
-		// fix for NodeJS 12 on MSVC 2019 x86
+		// fix for NodeJS 12 on Windows toolsets
 		async (compiler, next) => {
-			if(parseFloat(nodeVer) >= 12 && parseFloat(nodeVer) < 13 && buildOs == 'win32' && buildArch == 'x86') {
-				// for whatever reason, building Node 12 using 2019 build tools results in a horribly broken executable, but works fine in 2017
-				// Node's own Windows builds seem to be using 2017 for Node 12.x
+			if(parseFloat(nodeVer) >= 12 && parseFloat(nodeVer) < 13 && buildOs == 'win32') {
+				// allow VS2022-only runners by retargeting toolset (x64 only)
 				var data = await compiler.readFileAsync('vcbuild.bat');
 				data = data.contents.toString();
-				data = data.replace('GYP_MSVS_VERSION=2019', 'GYP_MSVS_VERSION=2017'); // seems to be required, even if no MSI is built
-				data = data.replace('PLATFORM_TOOLSET=v142', 'PLATFORM_TOOLSET=v141');
+				data = data.replace('GYP_MSVS_VERSION=2019', 'GYP_MSVS_VERSION=2022');
+				data = data.replace('PLATFORM_TOOLSET=v142', 'PLATFORM_TOOLSET=v143');
 				await compiler.setFileContentsAsync('vcbuild.bat', data);
 			}
 			return next();
