@@ -71,6 +71,14 @@ if(parseFloat(nodeVer) >= 10) {
 }
 if(vsSuite) vcbuildArgs.push(vsSuite);
 
+if(buildOs == 'darwin') {
+	// Clang on recent macOS treats some V8 warnings as errors for Node 12
+	configureArgs.push('--cflags=-Wno-enum-constexpr-conversion');
+	configureArgs.push('--cflags=-Wno-error');
+	configureArgs.push('--cxxflags=-Wno-enum-constexpr-conversion');
+	configureArgs.push('--cxxflags=-Wno-error');
+}
+
 if(process.env.BUILD_CONFIGURE)
 	configureArgs = configureArgs.concat(process.env.BUILD_CONFIGURE.split(' '));
 if(process.env.BUILD_VCBUILD)
@@ -251,12 +259,6 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 			if(buildArch == 'x86' || buildArch == 'ia32') {
 				data = data.replace(/('EnableIntrinsicFunctions':\s*'true',)(\s*)('FavorSizeOrSpeed':)/, "$1$2'EnableEnhancedInstructionSet': '2',$2$3");
 				data = data.replace(/('cflags': \[)(\s*'-O3')/, "$1 '-msse2',$2");
-			}
-			
-			// macOS + modern Clang: avoid treating deprecation/widening warnings as errors
-			if(buildOs == 'darwin') {
-				data = data.replace(/('cflags': \[)/, "$1'-Wno-enum-constexpr-conversion', '-Wno-error', ");
-				data = data.replace(/('cflags_cc': \[)/, "$1'-Wno-enum-constexpr-conversion', '-Wno-error', ");
 			}
 			
 			// MSVC - disable debug info
