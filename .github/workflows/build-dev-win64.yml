@@ -5,7 +5,7 @@ on:
 jobs:
   build-dev-win64:
     name: Build x64 Windows binary
-    runs-on: windows-latest
+    runs-on: windows-2019
     env:
       BUILD_ARCH: x64
       BUILD_LOGLEVEL: verbose
@@ -14,6 +14,10 @@ jobs:
     steps:
       - uses: ilammy/setup-nasm@v1
       - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          toolset: 14.16
+          vsversion: 2017
       - name: Install VS2017 Build Tools (v141)
         run: choco install visualstudio2017buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.v141.x86.x64" -y
       - uses: MatteoH2O1999/setup-python@v3 # https://github.com/actions/setup-python/issues/672
