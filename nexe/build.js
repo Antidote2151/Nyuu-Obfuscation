@@ -213,10 +213,18 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 			data = await compiler.readFileAsync('deps/yencode/binding.gyp');
 			data = data.contents.toString();
 			data = data.replace(/"target_name": "yencode",( "type": "static_library",)?/, '"target_name": "yencode", "type": "static_library",');
-			var includeList = '"../../src", "../v8/include", "../uv/include"';
+			var includeListArr = ['"../../src"', '"../v8/include"', '"../uv/include"'];
 			if(parseFloat(nodeVer) < 12)
-				includeList += ', "../cares/include"';
-			data = data.replace(/"include_dirs": \[("\.\.\/\.\.\/src"[^\]]+)?"crcutil/, '"include_dirs": [' + includeList + ', "crcutil');
+				includeListArr.push('"../cares/include"');
+			var includeList = includeListArr.join(', ');
+			if(/"include_dirs": \[/.test(data)) {
+				data = data.replace(/"include_dirs": \[([^\]]*)\]/, function(match, existing) {
+					if(existing.includes('../../src')) return match;
+					return '"include_dirs": [' + includeList + ', ' + existing.trim() + ']';
+				});
+			} else {
+				data = data.replace(/"sources": \[/, '"include_dirs": [' + includeList + '],\n      "sources": [');
+			}
 			data = data.replace(/"enable_native_tuning%": 1,/, '"enable_native_tuning%": 0,');
 			await compiler.setFileContentsAsync('deps/yencode/binding.gyp', data);
 			
