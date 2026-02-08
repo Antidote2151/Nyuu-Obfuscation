@@ -191,7 +191,7 @@ nexe.compile({
 			var data = await compiler.readFileAsync('deps/yencode/src/yencode.cc');
 			data = data.contents.toString();
 			// avoid relying on include paths for node headers
-			data = data.replace(/#include <node\.h>/g, '#include "../../src/node.h"');
+			data = data.replace(/#include <node\.h>/g, '#include "../../../src/node.h"');
 			data = data.replace(/#if NODE_VERSION_AT_LEAST\(10, 7, 0\).+?NODE_MODULE_INIT.+?#endif/s,
 `#define NODE_WANT_INTERNALS 1
 #include "../../../src/node_internals.h"
