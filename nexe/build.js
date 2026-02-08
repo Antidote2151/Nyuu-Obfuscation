@@ -190,6 +190,8 @@ nexe.compile({
 			// patch yencode
 			var data = await compiler.readFileAsync('deps/yencode/src/yencode.cc');
 			data = data.contents.toString();
+			// avoid relying on include paths for node headers
+			data = data.replace(/#include <node\.h>/g, '#include "../../src/node.h"');
 			data = data.replace(/#if NODE_VERSION_AT_LEAST\(10, 7, 0\).+?NODE_MODULE_INIT.+?#endif/s,
 `#define NODE_WANT_INTERNALS 1
 #include "../../../src/node_internals.h"
@@ -217,19 +219,20 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 			if(parseFloat(nodeVer) < 12)
 				includeListArr.push('"../cares/include"');
 			var includeList = includeListArr.join(', ');
+			const rootIncludeList = '"<(node_root_dir)/src", "<(node_root_dir)/deps/v8/include", "<(node_root_dir)/deps/uv/include"';
 			if(/"include_dirs": \[/.test(data) || /'include_dirs': \[/.test(data)) {
 				data = data.replace(/"include_dirs": \[([^\]]*)\]/, function(match, existing) {
-					if(existing.includes('../../src')) return match;
-					return '"include_dirs": [' + includeList + ', ' + existing.trim() + ']';
+					if(existing.includes('node_root_dir')) return match;
+					return '"include_dirs": [' + rootIncludeList + ', ' + existing.trim() + ']';
 				});
 				data = data.replace(/'include_dirs': \[([^\]]*)\]/, function(match, existing) {
-					if(existing.includes('../../src')) return match;
-					return "'include_dirs': [" + includeList + ', ' + existing.trim() + ']';
+					if(existing.includes('node_root_dir')) return match;
+					return "'include_dirs': [" + rootIncludeList + ', ' + existing.trim() + ']';
 				});
 			} else {
 				// insert include_dirs into the first target
-				data = data.replace(/("targets"\s*:\s*\[\s*\{)/, '$1\n      "include_dirs": [' + includeList + '],');
-				data = data.replace(/('targets'\s*:\s*\[\s*\{)/, "$1\n      'include_dirs': [" + includeList + '],');
+				data = data.replace(/("targets"\s*:\s*\[\s*\{)/, '$1\n      "include_dirs": [' + rootIncludeList + '],');
+				data = data.replace(/('targets'\s*:\s*\[\s*\{)/, "$1\n      'include_dirs': [" + rootIncludeList + '],');
 			}
 			data = data.replace(/"enable_native_tuning%": 1,/, '"enable_native_tuning%": 0,');
 			await compiler.setFileContentsAsync('deps/yencode/binding.gyp', data);
