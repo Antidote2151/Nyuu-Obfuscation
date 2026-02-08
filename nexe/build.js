@@ -72,7 +72,15 @@ if(parseFloat(nodeVer) >= 10) {
 if(vsSuite) vcbuildArgs.push(vsSuite);
 
 if(buildOs == 'win32') {
-	// use default toolset selection (v141 available via workflow install)
+	// ensure Node/V8 headers are available for yencode builds on Windows
+	const nodeRoot = path.resolve(nexeBase, nodeVer);
+	const includeFlags = [
+		'-I' + path.join(nodeRoot, 'src'),
+		'-I' + path.join(nodeRoot, 'deps', 'v8', 'include'),
+		'-I' + path.join(nodeRoot, 'deps', 'uv', 'include')
+	].join(' ');
+	process.env.CFLAGS = (process.env.CFLAGS ? process.env.CFLAGS + ' ' : '') + includeFlags;
+	process.env.CXXFLAGS = (process.env.CXXFLAGS ? process.env.CXXFLAGS + ' ' : '') + includeFlags;
 } else {
 	const nodeRoot = path.resolve(nexeBase, nodeVer);
 	const includeFlags = [
