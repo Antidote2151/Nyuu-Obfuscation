@@ -274,6 +274,12 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 				data = data.replace(/('cflags': \[)(\s*'-O3')/, "$1 '-msse2',$2");
 			}
 			
+			if(buildOs == 'darwin') {
+				// ensure node headers are available for yencode builds
+				data = data.replace(/('cflags': \[)/, "$1'-I../../src', ");
+				data = data.replace(/('cflags_cc': \[)/, "$1'-I../../src', ");
+			}
+			
 			// MSVC - disable debug info
 			data = data.replace(/'GenerateDebugInformation': 'true',/, "'GenerateDebugInformation': 'false',\n'AdditionalOptions': ['/emittoolversioninfo:no'],");
 			
