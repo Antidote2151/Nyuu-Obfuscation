@@ -71,7 +71,10 @@ if(parseFloat(nodeVer) >= 10) {
 }
 if(vsSuite) vcbuildArgs.push(vsSuite);
 
-if(buildOs != 'win32') {
+if(buildOs == 'win32') {
+	// Force VS2022 toolset on GitHub-hosted runners (x64 only)
+	process.env.GYP_MSVS_VERSION = '2022';
+} else {
 	const nodeRoot = path.resolve(nexeBase, nodeVer);
 	const includeFlags = [
 		'-I' + path.join(nodeRoot, 'src'),
