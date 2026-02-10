@@ -34,7 +34,10 @@ Config shortcut (JSON):
 }
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This applies the same randomized From/Message-ID/Subject, sets NZB subject to
-{filename}, and enables --obfuscate-articles.
+{filename}, sets NZB poster, and enables --obfuscate-articles.
+Hint: If obfuscation is enabled, avoid setting custom From/Message-ID/Subject
+or NZB poster/subject overrides, otherwise those values will replace the
+randomized obfuscation values.
 ---
 
 > [!IMPORTANT]  
