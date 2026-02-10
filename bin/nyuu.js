@@ -818,6 +818,43 @@ if(argv.config || process.env.NYUU_CONFIG) {
 		cOpts = evalConfig(confData, confFile);
 	else
 		error('Invalid config data supplied');
+
+	var applyObfuscationDefaults = function(opts, isFullConfig) {
+		if(!opts || !opts.obfuscation) return;
+
+		var fromVal = '{rand(14)} <{rand(14)}@{rand(5)}.{rand(3)}>';
+		var msgIdVal = '{rand(32)}@{rand(8)}.{rand(3)}';
+		var subjVal = '{rand(32)}';
+		var nzbSubjVal = '{filename}';
+
+		if(isFullConfig) {
+			if(!opts.postHeaders || typeof opts.postHeaders == 'function') {
+				// can't safely merge into function-based headers
+			} else {
+				if(!opts.postHeaders) opts.postHeaders = {};
+				if(!('From' in opts.postHeaders)) opts.postHeaders.From = fromVal;
+				if(!('Message-ID' in opts.postHeaders)) opts.postHeaders['Message-ID'] = msgIdVal;
+				if(!('Subject' in opts.postHeaders)) opts.postHeaders.Subject = subjVal;
+			}
+
+			if(!opts.nzb) opts.nzb = {};
+			if(!opts.nzb.overrides) opts.nzb.overrides = {};
+			if(!('subject' in opts.nzb.overrides)) opts.nzb.overrides.subject = nzbSubjVal;
+
+			opts.obfuscateArticles = true;
+		} else {
+			if(!('from' in opts)) opts.from = fromVal;
+			if(!('message-id' in opts)) opts['message-id'] = msgIdVal;
+			if(!('subject' in opts)) opts.subject = subjVal;
+			if(!('nzb-subject' in opts)) opts['nzb-subject'] = nzbSubjVal;
+
+			opts['obfuscate-articles'] = true;
+		}
+	};
+
+	applyObfuscationDefaults(cOpts, (cOpts && cOpts.isFullConfig && confType == 'js'));
+	if(cOpts)
+		delete cOpts.obfuscation;
 	
 	if(cOpts.isFullConfig && confType == 'js') {
 		if(cOpts.servers) {
