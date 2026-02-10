@@ -823,7 +823,6 @@ if(argv.config || process.env.NYUU_CONFIG) {
 		if(!opts || !opts.obfuscation) return;
 
 		var fromVal = '{rand(14)} <{rand(14)}@{rand(5)}.{rand(3)}>';
-		var posterVal = '{rand(14)} <{rand(14)}@{rand(5)}.{rand(3)}>';
 		var msgIdVal = '{rand(32)}@{rand(8)}.{rand(3)}';
 		var subjVal = '{rand(32)}';
 		var nzbSubjVal = '{filename}';
@@ -841,7 +840,6 @@ if(argv.config || process.env.NYUU_CONFIG) {
 			if(!opts.nzb) opts.nzb = {};
 			if(!opts.nzb.overrides) opts.nzb.overrides = {};
 			if(!('subject' in opts.nzb.overrides)) opts.nzb.overrides.subject = nzbSubjVal;
-			if(!('poster' in opts.nzb.overrides)) opts.nzb.overrides.poster = posterVal;
 
 			opts.obfuscateArticles = true;
 		} else {
@@ -849,7 +847,6 @@ if(argv.config || process.env.NYUU_CONFIG) {
 			if(!('message-id' in opts)) opts['message-id'] = msgIdVal;
 			if(!('subject' in opts)) opts.subject = subjVal;
 			if(!('nzb-subject' in opts)) opts['nzb-subject'] = nzbSubjVal;
-			if(!('nzb-poster' in opts)) opts['nzb-poster'] = posterVal;
 
 			opts['obfuscate-articles'] = true;
 		}
