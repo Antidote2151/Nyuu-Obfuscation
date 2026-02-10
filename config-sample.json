@@ -5,12 +5,12 @@
 
 " *** Server Options *** ":0,
 "host":               "127.0.0.1",
-"port":               119,
-"ssl":                false,
+"port":               443,
+"ssl":                true,
 "ignore-cert":        false,
 "user":               "",
 "password":           "",
-"connections":        3,
+"connections":        10,
 
 " *** Article Options *** ":0,
 "article-size":       "700K",
