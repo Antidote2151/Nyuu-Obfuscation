@@ -489,6 +489,9 @@ UI Options:
                              aliases aren't supported).
                              Nyuu also accepts a complex config file, see
                              config.js for an example.
+                             Config shortcut: set "obfuscation": true to apply
+                             randomized From/Message-ID/Subject, NZB subject,
+                             and enable --obfuscate-articles.
                              SECURITY WARNING: do not load untrusted config
                              files as they can be malicious
   -?,  --help                Display a summarized list of options (flag option)

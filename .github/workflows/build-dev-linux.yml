@@ -3,25 +3,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-dev-linux:
+  build-dev-linux-amd:
     strategy:
       fail-fast: false
       matrix:
         include:
-        - target: x86_64-linux-musl
-          arch: x64
-          xz_bcj: --x86
-          name: amd64
-        - target: aarch64-linux-musl
-          arch: arm64
-          xz_bcj: 
-          name: aarch64
-        # disabled due to compiler crashing
-        #- target: armv7l-linux-musleabihf
-        #  arch: arm
-        #  xz_bcj: --arm
-        #  name: armhf
-    name: Build ${{ matrix.name }} dev Linux binary
+          - target: x86_64-linux-musl
+            arch: x64
+            xz_bcj: --x86
+            name: amd64
+            nodever: 12.22.12
+    name: Build ${{ matrix.name }} Linux binary
     runs-on: ubuntu-latest
     env:
       BUILD_ARCH: ${{ matrix.arch }}
@@ -52,7 +44,39 @@ jobs:
           CXX_host: c++
       - run: ${{ steps.musl.outputs.path }}/${{ matrix.target }}-strip nexe/nyuu
       - run: tar --group=nobody --owner=nobody -cf - -C nexe nyuu ../config-sample.json | xz -9e ${{ matrix.xz_bcj }} --lzma2 > nyuu.txz
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
+        with:
+          path: ./nyuu.txz
+          name: nyuu-${{ github.ref_name }}-linux-${{ matrix.name }}.7z
+          retention-days: 5
+
+  build-dev-linux-arm64:
+    name: Build ARM64 Linux binary
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            name: aarch64
+            nodever: 12.22.12
+    runs-on: ubuntu-24.04-arm64
+    env:
+      BUILD_ARCH: ${{ matrix.arch }}
+      BUILD_LOGLEVEL: verbose
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.nodever }}
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build --targets=linux-arm64-${{ matrix.nodever }})
+      - run: strip nexe/nyuu
+      - run: tar --group=nobody --owner=nobody -cf - -C nexe nyuu ../config-sample.json | xz -9e --lzma2 > nyuu.txz
+      - uses: actions/upload-artifact@v4
         with:
           path: ./nyuu.txz
           name: nyuu-${{ github.ref_name }}-linux-${{ matrix.name }}.7z

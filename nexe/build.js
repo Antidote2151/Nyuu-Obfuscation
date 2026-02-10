@@ -4,7 +4,7 @@ var os = require('os');
 var compileConcurrency = os.cpus().length;
 var python = null;
 // process.env.path = '' + process.env.path; // if need to specify a Python path
-var buildArch = "x64"; // x86 or x64
+var buildArch = process.env.BUILD_ARCH || "x64"; // x86, x64, arm64
 var buildOs = process.env.BUILD_OS || os.platform();
 var nexeBase = './build';
 var nodeVer = process.env.BUILD_NODEVER || '12.22.12';
@@ -70,6 +70,32 @@ if(parseFloat(nodeVer) >= 10) {
 	vcbuildArgs.push('noperfctr');
 }
 if(vsSuite) vcbuildArgs.push(vsSuite);
+
+if(buildOs == 'win32') {
+	// ensure Node/V8 headers are available for yencode builds on Windows
+	const nodeRoot = path.resolve(nexeBase, nodeVer);
+	const includeFlags = [
+		'/I' + path.join(nodeRoot, 'src'),
+		'/I' + path.join(nodeRoot, 'deps', 'v8', 'include'),
+		'/I' + path.join(nodeRoot, 'deps', 'uv', 'include')
+	].join(' ');
+	process.env.CL = (process.env.CL ? process.env.CL + ' ' : '') + includeFlags;
+} else {
+	const nodeRoot = path.resolve(nexeBase, nodeVer);
+	const includeFlags = [
+		'-I' + path.join(nodeRoot, 'src'),
+		'-I' + path.join(nodeRoot, 'deps', 'v8', 'include'),
+		'-I' + path.join(nodeRoot, 'deps', 'uv', 'include')
+	].join(' ');
+	let extraFlags = '';
+	if(buildOs == 'darwin') {
+		// Clang on recent macOS treats some V8 warnings as errors for Node 12
+		extraFlags = '-Wno-enum-constexpr-conversion -Wno-error';
+	}
+	const cflags = (extraFlags ? extraFlags + ' ' : '') + includeFlags;
+	process.env.CFLAGS = (process.env.CFLAGS ? process.env.CFLAGS + ' ' : '') + cflags;
+	process.env.CXXFLAGS = (process.env.CXXFLAGS ? process.env.CXXFLAGS + ' ' : '') + cflags;
+}
 
 if(process.env.BUILD_CONFIGURE)
 	configureArgs = configureArgs.concat(process.env.BUILD_CONFIGURE.split(' '));
@@ -183,6 +209,8 @@ nexe.compile({
 			// patch yencode
 			var data = await compiler.readFileAsync('deps/yencode/src/yencode.cc');
 			data = data.contents.toString();
+			// avoid relying on include paths for node headers
+			data = data.replace(/#include <node\.h>/g, '#include "../../../src/node.h"');
 			data = data.replace(/#if NODE_VERSION_AT_LEAST\(10, 7, 0\).+?NODE_MODULE_INIT.+?#endif/s,
 `#define NODE_WANT_INTERNALS 1
 #include "../../../src/node_internals.h"
@@ -206,13 +234,21 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 			data = await compiler.readFileAsync('deps/yencode/binding.gyp');
 			data = data.contents.toString();
 			data = data.replace(/"target_name": "yencode",( "type": "static_library",)?/, '"target_name": "yencode", "type": "static_library",');
-			var includeList = '"../../src", "../v8/include", "../uv/include"';
+			var includeListArr = ['"../../src"', '"../v8/include"', '"../uv/include"'];
 			if(parseFloat(nodeVer) < 12)
-				includeList += ', "../cares/include"';
-			data = data.replace(/"include_dirs": \[("\.\.\/\.\.\/src"[^\]]+)?"crcutil/, '"include_dirs": [' + includeList + ', "crcutil');
+				includeListArr.push('"../cares/include"');
+			var includeList = includeListArr.join(', ');
+			// include dirs are provided via CFLAGS/CXXFLAGS for macOS builds
 			data = data.replace(/"enable_native_tuning%": 1,/, '"enable_native_tuning%": 0,');
 			await compiler.setFileContentsAsync('deps/yencode/binding.gyp', data);
 			
+			return next();
+		},
+		
+		// fix zlib fdopen macro clash on modern macOS SDKs
+		async (compiler, next) => {
+			if(buildOs != 'darwin') return next();
+			await compiler.replaceInFileAsync('deps/zlib/zutil.h', /#\s*define\s+fdopen\([^\)]*\)\s+NULL.*$/m, '/* fdopen available on macOS */');
 			return next();
 		},
 		
@@ -253,6 +289,12 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 				data = data.replace(/('cflags': \[)(\s*'-O3')/, "$1 '-msse2',$2");
 			}
 			
+			if(buildOs == 'darwin') {
+				// ensure node headers are available for yencode builds
+				data = data.replace(/('cflags': \[)/, "$1'-I../../src', ");
+				data = data.replace(/('cflags_cc': \[)/, "$1'-I../../src', ");
+			}
+			
 			// MSVC - disable debug info
 			data = data.replace(/'GenerateDebugInformation': 'true',/, "'GenerateDebugInformation': 'false',\n'AdditionalOptions': ['/emittoolversioninfo:no'],");
 			
@@ -267,16 +309,10 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 			return next();
 		},
 		
-		// fix for NodeJS 12 on MSVC 2019 x86
+		// fix for NodeJS 12 on Windows toolsets
 		async (compiler, next) => {
-			if(parseFloat(nodeVer) >= 12 && parseFloat(nodeVer) < 13 && buildOs == 'win32' && buildArch == 'x86') {
-				// for whatever reason, building Node 12 using 2019 build tools results in a horribly broken executable, but works fine in 2017
-				// Node's own Windows builds seem to be using 2017 for Node 12.x
-				var data = await compiler.readFileAsync('vcbuild.bat');
-				data = data.contents.toString();
-				data = data.replace('GYP_MSVS_VERSION=2019', 'GYP_MSVS_VERSION=2017'); // seems to be required, even if no MSI is built
-				data = data.replace('PLATFORM_TOOLSET=v142', 'PLATFORM_TOOLSET=v141');
-				await compiler.setFileContentsAsync('vcbuild.bat', data);
+			if(parseFloat(nodeVer) >= 12 && parseFloat(nodeVer) < 13 && buildOs == 'win32') {
+				// No-op: rely on GYP_MSVS_TOOLSET_VERSION instead of patching vcxproj files
 			}
 			return next();
 		},

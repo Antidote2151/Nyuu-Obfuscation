@@ -78,6 +78,9 @@ UI Options:
                              correspond with the command arguments documented
                              in this help file (full options only, short
                              aliases aren't supported).
+                             Config shortcut: set "obfuscation": true to apply
+                             randomized From/Message-ID/Subject, NZB subject,
+                             and enable --obfuscate-articles.
   -?,  --help                Display this help screen (flag option)
        --help-full           Display full help screen (flag option)
 

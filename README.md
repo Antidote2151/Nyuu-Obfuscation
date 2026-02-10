@@ -1,3 +1,15 @@
+> **Need a GUI uploader with full obfuscation?**  
+> Check out **Postie** → https://github.com/javi11/postie
+
+### Highlights
+- GUI-based uploader
+- Full obfuscation support
+
+### Link
+- 🔗 **Repository:** https://github.com/javi11/postie
+
+--------
+
 A small variation of Nyuu was the article Obfuscate. 
 This fork has the following additional functions:
 
@@ -14,6 +26,18 @@ Example Arguments for Anonymous Usenet Posting:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -f "{rand(14)} <{rand(14)}@{rand(5)}.{rand(3)}>" --message-id "{rand(32)}@{rand(8)}.{rand(3)}" --subject "{rand(32)}" --nzb-subject "{filename}" --obfuscate-articles
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---
+Config shortcut (JSON):
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+{
+  "obfuscation": true
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This applies the same randomized From/Message-ID/Subject, sets NZB subject to
+{filename}, sets NZB poster, and enables --obfuscate-articles.
+Hint: If obfuscation is enabled, avoid setting custom From/Message-ID/Subject
+or NZB poster/subject overrides, otherwise those values will replace the
+randomized obfuscation values.
 ---
 
 > [!IMPORTANT]  

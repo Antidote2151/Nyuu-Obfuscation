@@ -11,8 +11,16 @@ jobs:
     env:
       BUILD_ARCH: x64
       BUILD_LOGLEVEL: verbose
+      GYP_MSVS_VERSION: '2019'
     steps:
       - uses: ilammy/setup-nasm@v1
+      - name: Install VS2019 Build Tools (v141)
+        run: choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.v141.x86.x64" -y
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          toolset: 14.16
+          vsversion: 2019
       - uses: MatteoH2O1999/setup-python@v3
         with:
           python-version: '2.7'
@@ -84,3 +92,92 @@ jobs:
           asset_path: ./nyuu.txz
           asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-linux-${{ matrix.name }}.tar.xz
           asset_content_type: application/octet-stream
+
+  build-linux-arm64:
+    name: Build ARM64 Linux binary
+    runs-on: ubuntu-24.04-arm64
+    env:
+      BUILD_ARCH: arm64
+      BUILD_LOGLEVEL: verbose
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '12.22.12'
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build --targets=linux-arm64-12.22.12)
+      - run: strip nexe/nyuu
+      - run: tar --group=nobody --owner=nobody -cf - -C nexe nyuu ../config-sample.json | xz -9e --lzma2 > nyuu.txz
+      - uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./nyuu.txz
+          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-linux-aarch64.tar.xz
+          asset_content_type: application/octet-stream
+
+  build-macos-arm64:
+    name: Build macOS ARM64 binary
+    runs-on: macos-latest
+    env:
+      BUILD_ARCH: arm64
+      BUILD_LOGLEVEL: verbose
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9' # workaround "cannot import name 'Mapping' from 'collections'" error
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build --targets=macos-arm64-12.22.1)
+        env:
+          CC: cc
+          CXX: c++
+      - run: tar --owner=$(id -un) --group=staff -cf - -C nexe nyuu ../config-sample.json | xz -9e > nyuu.txz
+      - uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./nyuu.txz
+          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-mac-arm64.tar.xz
+          asset_content_type: application/octet-stream
+
+  build-macos-x64:
+    name: Build macOS x64 binary
+    runs-on: macos-15-intel
+    env:
+      BUILD_ARCH: x64
+      BUILD_LOGLEVEL: verbose
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9' # workaround "cannot import name 'Mapping' from 'collections'" error
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: npm install --production
+      - run: (cd nexe && npm install --production)
+      - run: (cd nexe && node build)
+      - run: tar --owner=$(id -un) --group=staff -cf - -C nexe nyuu ../config-sample.json | xz -9e > nyuu.txz
+      - uses: shogo82148/actions-upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./nyuu.txz
+          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-mac-x64.tar.xz
+          asset_content_type: application/octet-stream
+

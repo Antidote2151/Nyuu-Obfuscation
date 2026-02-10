@@ -5,17 +5,16 @@
 
 " *** Server Options *** ":0,
 "host":               "127.0.0.1",
-"port":               119,
-"ssl":                false,
+"port":               443,
+"ssl":                true,
 "ignore-cert":        false,
 "user":               "",
 "password":           "",
-"connections":        3,
+"connections":        10,
 
 " *** Article Options *** ":0,
 "article-size":       "700K",
 "comment":            "",
-"from":               "Snazzy Poster <me@localhost.localdomain>",
 "groups":             "alt.binaries.test, alt.binaries.boneless",
 
 " *** Check Options *** ":0,
@@ -32,6 +31,9 @@
 " *** Other Options *** ":0,
 "skip-errors":        false,
 "quiet":              false,
+
+" *** Obfuscation Shortcut *** ":0,
+"obfuscation":        true,
 
 
 " More options can be specified; see help.txt for a list with explanations ":0,

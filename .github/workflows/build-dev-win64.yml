@@ -9,8 +9,16 @@ jobs:
     env:
       BUILD_ARCH: x64
       BUILD_LOGLEVEL: verbose
+      GYP_MSVS_VERSION: '2019'
     steps:
       - uses: ilammy/setup-nasm@v1
+      - name: Install VS2019 Build Tools (v141)
+        run: choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.v141.x86.x64" -y
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          toolset: 14.16
+          vsversion: 2019
       - uses: MatteoH2O1999/setup-python@v3 # https://github.com/actions/setup-python/issues/672
         with:
           python-version: '2.7'
@@ -19,7 +27,7 @@ jobs:
       - run: (cd nexe && npm install --production)
       - run: (cd nexe && node build)
       - run: move nexe\nyuu.exe nyuu.exe && 7z a -t7z -mx=9 nyuu.7z config-sample.json nyuu.exe
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: ./nyuu.7z
           name: nyuu-${{ github.ref_name }}-win64.7z
