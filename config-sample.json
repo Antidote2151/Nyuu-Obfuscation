@@ -15,7 +15,6 @@
 " *** Article Options *** ":0,
 "article-size":       "700K",
 "comment":            "",
-"from":               "Snazzy Poster <me@localhost.localdomain>",
 "groups":             "alt.binaries.test, alt.binaries.boneless",
 
 " *** Check Options *** ":0,
@@ -34,7 +33,7 @@
 "quiet":              false,
 
 " *** Obfuscation Shortcut *** ":0,
-"obfuscation":        false,
+"obfuscation":        true,
 
 
 " More options can be specified; see help.txt for a list with explanations ":0,
