@@ -34,7 +34,7 @@
 "quiet":              false,
 
 " *** Obfuscation Shortcut *** ":0,
-"obfuscation":        false,
+"obfuscation":        true,
 
 
 " More options can be specified; see help.txt for a list with explanations ":0,
