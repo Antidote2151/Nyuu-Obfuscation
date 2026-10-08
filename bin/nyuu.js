@@ -48,6 +48,14 @@ var servOptMap = {
 		keyMap: 'tcpKeepAlive',
 		ifSetDefault: '30s'
 	},
+	ipv4: {
+		type: 'bool',
+		keyMap: 'connect/family',
+		fn: function(v) {
+			return v ? 4 : undefined;
+		},
+		alias: '4'
+	},
 	ipv6: {
 		type: 'bool',
 		keyMap: 'connect/family',
@@ -552,6 +560,10 @@ var optMap = {
 		alias: 'L',
 		map: 'skipSymlinks'
 	},
+	'include-empty': {
+		type: 'bool',
+		map: 'processEmptyFiles'
+	},
 	'input-file': {
 		type: 'array',
 		alias: 'i'
@@ -631,7 +643,8 @@ var optMap = {
 		alias: 'E'
 	},
 	'copy-input': {
-		type: 'string'
+		type: 'string',
+		alias: 'I'
 	},
 	'copy-include': {
 		type: 'string'
@@ -856,6 +869,7 @@ if(argv.config || process.env.NYUU_CONFIG) {
 	if(cOpts)
 		delete cOpts.obfuscation;
 	
+	var cliOpts;
 	if(cOpts.isFullConfig && confType == 'js') {
 		if(cOpts.servers) {
 			// for the default setup of one upload server, but multiple specified in custom config, duplicate the default setup for each custom server
@@ -875,17 +889,20 @@ if(argv.config || process.env.NYUU_CONFIG) {
 		util.deepMerge(ulOpts, cOpts);
 	} else {
 		// simple config format, just set unset CLI args
-		cOpts = arg_parser(cOpts, optMap);
-		
-		// allow --quiet or --verbose to override whatever is specified in the config, without error
-		if(argv.quiet || argv.verbose) {
-			delete cOpts.quiet;
-			delete cOpts.verbose;
-		}
-		for(var k in cOpts) {
-			if(!(k in argv) && k[0] != ' ')
-				argv[k] = cOpts[k];
-		}
+		util.deepMerge(ulOpts.cli, cOpts);
+	}
+}
+if(ulOpts.cli) {
+	var cOpts = arg_parser(ulOpts.cli, optMap);
+	
+	// allow --quiet or --verbose to override whatever is specified in the config, without error
+	if(argv.quiet || argv.verbose) {
+		delete cOpts.quiet;
+		delete cOpts.verbose;
+	}
+	for(var k in cOpts) {
+		if(!(k in argv) && k[0] != ' ')
+			argv[k] = cOpts[k];
 	}
 }
 
@@ -1159,6 +1176,8 @@ if(argv['out']) {
 
 if(argv.quiet && argv.verbose)
 	error('Cannot specify both `quiet` and `verbose`');
+if(argv.ipv4 && argv.ipv6)
+	error('Cannot specify both `ipv4` and `ipv6`');
 
 var verbosity = 3;
 if(argv['log-level'] || argv['log-level'] === 0)
@@ -1393,7 +1412,7 @@ var filesToUpload = argv._;
 	
 	var fuploader = Nyuu.upload(filesToUpload.map(function(file) {
 		// TODO: consider supporting deferred filesize gathering?
-		var m = file.match(/^procjson:\/\/(.+?,.+?,.+)$/i);
+		var m = file.match(/^procjson:\/\/(.+?,.+?,.*)$/i);
 		if(m) {
 			if(m[1].substring(0, 1) != '[')
 				m[1] = '[' + m[1] + ']';
@@ -1409,8 +1428,8 @@ var filesToUpload = argv._;
 					return processStart('Input', cmd, {stdio: ['ignore','pipe','ignore']}).stdout;
 				}.bind(null, m[2])
 			};
-			if(!ret.size)
-				error('Invalid size specified for process input: ' + file);
+			if(!ret.size && !m[2])
+				ret.stream = null; // if empty file and no command given, don't assign a stream
 			if(argv['preload-modules']) {
 				require('../cli/procman');
 				require('../lib/streamreader');
@@ -1476,7 +1495,7 @@ var filesToUpload = argv._;
 		for(var filename in files) {
 			var sz = files[filename].size;
 			totalSize += sz;
-			totalPieces += Math.ceil(sz / ulOpts.articleSize);
+			totalPieces += Math.max(1, Math.ceil(sz / ulOpts.articleSize));
 			totalFiles++;
 		}
 		if(argv['input-raw-posts']) {

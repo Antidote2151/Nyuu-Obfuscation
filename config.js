@@ -178,6 +178,7 @@ articleQueueBuffer: null, // number of buffered articles; default is min(round(n
 /** Other Options **/
 subdirs: 'include', // can be 'skip', 'include' or 'keep'; note that it affects directly passed directories too
 skipSymlinks: false, // ignore all symlinks
+processEmptyFiles: false, // don't skip 0 byte files
 // filenames will be transformed according to the following setting, which is a function that will have the file's path and name passed to it
 // the default is to keep the filename component only, which essentially flattens all files into a single directory
 // this is similar to how other clients handle folders
@@ -192,6 +193,20 @@ dumpPostLoc: '', // dump all failed articles to this location (the Message-ID wi
 
 // only used for raw post uploading; delete successfully uploaded post files
 deleteRawPosts: false,
+
+
+// CLI UI options - these are equivalent to options in the JSON config - see help-full.txt for details
+cli: {
+	colorize: !!process.stderr.isTTY,
+	'log-level': 3, // 1=error, 2=warning (quiet), 3=info, 4=debug (verbose)
+	'log-time': false,
+	progress: null, // array of strings, describing enabled progress indicators
+	'input-file': null, // array of strings
+	'input-file0': null, // array of strings
+	'input-file-enc': 'utf8',
+	'preload-modules': false,
+	'input-raw-posts': false,
+},
 
 isFullConfig: true // leave here to indicate that this is a full config file, as opposed to the simplified config file
 };

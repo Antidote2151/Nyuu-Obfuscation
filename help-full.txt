@@ -18,6 +18,7 @@ Upload Server Options:
                              SSL with Unix sockets requires NodeJS >= 0.12
   -P,  --port                Port to connect to (default 119 or 563 if `--ssl`
                              is specified)
+  -4,  --ipv4                Force connect over IPv4 (flag option)
   -6,  --ipv6                Connect over IPv6 (flag option)
                              Requires NodeJS >= 0.12
        --bind-host           Local address to bind to
@@ -517,6 +518,8 @@ Input Files:
                              directory traversal (if `--subdirs=keep` is
                              specified). By default, all symlinks are followed.
                              This option takes no values.
+       --include-empty       If specified, 0-byte files will not be skipped.
+                             This option takes no values.
 
   Alternatively, a list of files can be supplied, with the following options:
 
@@ -573,7 +576,7 @@ Input Files:
                              For example, the following can be used to
                              generate a list of MD5 hashes of the input files,
                              on Linux, without re-reading files off disk:
-                               `--I "proc://echo `md5sum|sed s/-//` {filename} >>md5list`
+                               `-I 'proc://echo `md5sum|sed s/-//` {filename} >>md5list'`
                              WARNING: {filename} isn't sanitized in any way, so
                              take care when using it, especially when using it
                              in a command!
