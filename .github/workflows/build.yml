@@ -46,10 +46,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - target: x86_64-linux-musl
+        - target: x86_64
           arch: x64
           xz_bcj: --x86
           name: amd64
+        - target: aarch64
+          arch: arm64
+          xz_bcj: 
+          name: aarch64
+        # disabled due to compiler crashing
+        #- target: arm
+        #  arch: arm
+        #  xz_bcj: --arm
+        #  name: armhf
     name: Build ${{ matrix.name }} Linux binary
     runs-on: ubuntu-latest
     env:
@@ -57,14 +66,14 @@ jobs:
       BUILD_LOGLEVEL: verbose
       BUILD_CONFIGURE: '--with-arm-float-abi=hard --with-arm-fpu=vfpv3-d16'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9' # workaround "cannot import name 'Mapping' from 'collections'" error
-      - uses: Lesmiscore/musl-cross-compilers@jockie
+      - uses: arceos-org/setup-musl@v1.0.3
         id: musl
         with:
-          target: ${{ matrix.target }}
+          arch: ${{ matrix.target }}
       - name: Install i386 dev
         run: |
           sudo dpkg --add-architecture i386
@@ -73,56 +82,30 @@ jobs:
         if: ${{ matrix.arch == 'arm' }}
       - name: Get release
         id: get_release
-        uses: bruceadams/get-release@v1.2.3
+        uses: bruceadams/get-release@v1.3.2
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - run: npm install --production
-      - run: (cd nexe && npm install --production)
-      - run: (cd nexe && node build)
+      - run: npm install --omit=dev --ignore-scripts
+      - run: npm install --omit=dev
+        working-directory: nexe
+      - run: node build
+        working-directory: nexe
         env:
-          CC: ${{ steps.musl.outputs.path }}/${{ matrix.target }}-cc
-          CXX: ${{ steps.musl.outputs.path }}/${{ matrix.target }}-c++
+          CC: ${{ steps.musl.outputs.cross_compile }}-cc
+          CXX: ${{ steps.musl.outputs.cross_compile }}-c++
           CC_host: cc
           CXX_host: c++
-      - run: ${{ steps.musl.outputs.path }}/${{ matrix.target }}-strip nexe/nyuu
+      - run: ${{ steps.musl.outputs.cross_compile }}-strip nexe/nyuu
       - run: tar --group=nobody --owner=nobody -cf - -C nexe nyuu ../config-sample.json | xz -9e ${{ matrix.xz_bcj }} --lzma2 > nyuu.txz
-      - uses: shogo82148/actions-upload-release-asset@v1
+      - uses: sekwah41/upload-release-assets@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
-          upload_url: ${{ github.event.release.upload_url }}
+          upload_url: ${{ steps.get_release.outputs.upload_url }} 
           asset_path: ./nyuu.txz
           asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-linux-${{ matrix.name }}.tar.xz
           asset_content_type: application/octet-stream
 
-  build-linux-arm64:
-    name: Build ARM64 Linux binary
-    runs-on: ubuntu-24.04-arm
-    env:
-      BUILD_ARCH: arm64
-      BUILD_LOGLEVEL: verbose
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '12.22.12'
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.2.3
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - run: npm install --production
-      - run: (cd nexe && npm install --production)
-      - run: (cd nexe && node build --targets=linux-arm64-12.22.12)
-      - run: strip nexe/nyuu
-      - run: tar --group=nobody --owner=nobody -cf - -C nexe nyuu ../config-sample.json | xz -9e --lzma2 > nyuu.txz
-      - uses: shogo82148/actions-upload-release-asset@v1
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./nyuu.txz
-          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-linux-aarch64.tar.xz
-          asset_content_type: application/octet-stream
 
   build-macos-arm64:
     name: Build macOS ARM64 binary
