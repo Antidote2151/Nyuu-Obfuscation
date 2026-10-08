@@ -95,7 +95,7 @@ jobs:
 
   build-linux-arm64:
     name: Build ARM64 Linux binary
-    runs-on: ubuntu-24.04-arm64
+    runs-on: ubuntu-24.04-arm
     env:
       BUILD_ARCH: arm64
       BUILD_LOGLEVEL: verbose
