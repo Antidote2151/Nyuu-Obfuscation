@@ -5,7 +5,7 @@ on:
 jobs:
   build-dev-macos-arm64:
     name: Build macOS ARM64 binary
-    runs-on: macos-latest
+    runs-on: macos-15 # macos-latest (26, Xcode 26) cannot build Node 12
     env:
       BUILD_ARCH: arm64
       BUILD_LOGLEVEL: verbose
