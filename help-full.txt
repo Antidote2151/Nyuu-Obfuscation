@@ -40,6 +40,10 @@ Upload Server Options:
   -p,  --password            Password to authenticate with
   -n,  --connections         Number of connections to create for posting
                              (default 3)
+       --server              Additional posting server, in the form
+                             nntp[s]://[user[:pass]@]host[:port][?connections=N]
+                             Can be repeated. Inherits other server options;
+                             without `--host`, the first one is the main server
        --max-upload-rate     Throttle rate at which posts are uploaded at. This
                              option is in the form {size}/{time}, for example
                              "10M/5s" which means 10 MiB per 5 seconds. If the

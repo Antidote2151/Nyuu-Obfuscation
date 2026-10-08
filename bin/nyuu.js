@@ -696,6 +696,9 @@ var optMap = {
 	config: {
 		type: 'string',
 		alias: 'C'
+	},
+	server: {
+		type: 'array'
 	}
 };
 
@@ -1003,6 +1006,41 @@ if(checkOverrides && argv['check-connections'] !== 0 && (defNumConnCheck || argv
 	}
 	
 	ulOpts.servers = ulOpts.servers.concat(addServ);
+}
+
+// additional posting servers: --server nntp[s]://[user[:pass]@]host[:port][?connections=N]
+// each inherits the settings of the first server; without --host, the first --server replaces it
+if(argv.server && argv.server.length) {
+	var baseServ = ulOpts.servers[0];
+	var baseJson = JSON.stringify(baseServ), baseConnect = util.extend({}, baseServ.connect); // snapshot before the first --server may modify it
+	argv.server.forEach(function(s, i) {
+		var u = require('url').parse(s, true);
+		if(!u.hostname || (u.protocol != 'nntp:' && u.protocol != 'nntps:'))
+			error('Invalid value for `--server`: ' + s + ' (expected nntp[s]://[user[:pass]@]host[:port][?connections=N])');
+		var conns = u.query.connections;
+		if(conns !== undefined && !(''+conns).match(/^\d+$/))
+			error('Invalid connections specified for `--server`: ' + s);
+
+		var serv;
+		if(i == 0 && !argv.host) {
+			serv = baseServ;
+		} else {
+			serv = JSON.parse(baseJson);
+			serv.connect = util.extend({}, baseConnect); // keep non-JSON values like ca Buffers
+			serv.checkConnections = 0; // extra servers only post
+			ulOpts.servers.push(serv);
+		}
+		serv.connect.host = u.hostname;
+		serv.connect.port = u.port ? u.port|0 : null;
+		serv.secure = u.protocol == 'nntps:';
+		// never inherit login, so credentials aren't sent to another provider
+		var auth = u.auth || '';
+		var sep = auth.indexOf(':');
+		serv.user = sep == -1 ? auth : auth.substring(0, sep);
+		serv.password = sep == -1 ? '' : auth.substring(sep + 1);
+		if(conns !== undefined) serv.postConnections = conns|0;
+		else if(!serv.postConnections) serv.postConnections = argv.connections || 3;
+	});
 }
 
 if(argv['post-chunk-size']) {

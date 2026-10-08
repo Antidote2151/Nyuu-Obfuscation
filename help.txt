@@ -21,6 +21,10 @@ Upload Server Options:
   -u,  --user                Username to authenticate with
   -p,  --password            Password to authenticate with
   -n,  --connections         Number of connections to use (default 3)
+       --server              Additional posting server, in the form
+                             nntp[s]://[user[:pass]@]host[:port][?connections=N]
+                             Can be repeated. Inherits other server options;
+                             without `--host`, the first one is the main server
 
 Article/Post Options:
 
