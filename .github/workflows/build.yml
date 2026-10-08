@@ -2,7 +2,7 @@ name: Build release binary
 on:
   release:
     types:
-      - created
+      - published
 
 jobs:
   build-win64:
