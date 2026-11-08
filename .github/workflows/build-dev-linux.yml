@@ -19,7 +19,7 @@ jobs:
     name: Build ${{ matrix.name }} dev Linux binary
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Node 24 needs GCC >= 12.2, the musl.cc cross toolchains are GCC 11, so build natively on Alpine (musl) instead
       - name: Build in Alpine
         run: |
@@ -32,7 +32,7 @@ jobs:
             strip nyuu
           '
       - run: tar --group=nobody --owner=nobody -cf - -C nexe nyuu ../config-sample.json | xz -9e ${{ matrix.xz_bcj }} --lzma2 > nyuu.txz
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           path: ./nyuu.txz
           name: nyuu-${{ github.ref_name }}-linux-${{ matrix.name }}.7z

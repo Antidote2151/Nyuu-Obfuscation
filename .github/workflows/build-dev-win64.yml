@@ -11,10 +11,10 @@ jobs:
       BUILD_LOGLEVEL: verbose
     steps:
       - uses: ilammy/setup-nasm@v1
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # node-gyp supplied by Win2025 image fails to detect VS2026 - so force update it
       - run: npm install --global npm
       - run: npm install --omit=dev --ignore-scripts
@@ -23,7 +23,7 @@ jobs:
       - run: node build
         working-directory: nexe
       - run: move nexe\nyuu.exe nyuu.exe && 7z a -t7z -mx=9 nyuu.7z config-sample.json nyuu.exe
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           path: ./nyuu.7z
           name: nyuu-${{ github.ref_name }}-win64.7z
