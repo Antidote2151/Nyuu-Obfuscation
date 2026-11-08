@@ -11,9 +11,9 @@ jobs:
       BUILD_LOGLEVEL: verbose
     steps:
       - uses: ilammy/setup-nasm@v1
-      - uses: MatteoH2O1999/setup-python@v3 # https://github.com/actions/setup-python/issues/672
+      - uses: actions/setup-python@v5
         with:
-          python-version: '2.7'
+          python-version: '3.12'
       - uses: actions/checkout@v4
       # node-gyp supplied by Win2025 image fails to detect VS2026 - so force update it
       - run: npm install --global npm
