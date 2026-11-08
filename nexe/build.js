@@ -65,7 +65,9 @@ if(os.platform() == 'win32') {
 // invoke nexe
 // --without-corepack
 var configureArgs = [staticness, '--without-npm', '--with-intl=none', '--without-node-options', '--without-inspector', '--without-siphash', '--dest-cpu=' + buildArch];
-if(parseFloat(nodeVer) < 20) configureArgs.push('--without-dtrace', '--without-etw', '--without-report'); // removed later, newer configure errors on unknown args
+// removed in newer Node, configure errors on unknown args
+if(parseFloat(nodeVer) < 20) configureArgs.push('--without-dtrace', '--without-etw');
+if(parseFloat(nodeVer) < 24) configureArgs.push('--without-report');
 var vcbuildArgs = ["nosign", buildArch, "intl-none", "release", "static"];
 if(parseFloat(nodeVer) < 20) vcbuildArgs.push("noetw"); // removed later, newer vcbuild errors on unknown args
 // --v8-lite-mode ?
