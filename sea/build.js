@@ -46,10 +46,10 @@ fs.writeFileSync(helpJson, JSON.stringify({
 	short: fs.readFileSync(path.join(root, 'help.txt')).toString()
 }));
 
-const b = browserify([path.join(root, 'bin/nyuu.js')], { detectGlobals: true, node: true });
+// ignoreMissing: bin/nyuu.js optionally requires nexe's package.json (in a try), which isn't installed here
+const b = browserify([path.join(root, 'bin/nyuu.js')], { detectGlobals: true, node: true, ignoreMissing: true });
 b.exclude(yencNode);
 b.exclude('worker_threads');
-b.exclude(path.join(root, 'nexe/node_modules/nexe/package.json'));
 
 b.bundle((err, src) => {
 	fs.rmSync(helpJson);
