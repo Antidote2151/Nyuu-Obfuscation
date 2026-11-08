@@ -11,6 +11,6 @@
   "dependencies" : {
     "nexe" : "4.0.0-rc.6",
     "browserify" : "^17.0.0",
-    "yencode" : "~1.2.1"
+    "yencode" : "~1.2.4"
   }
 }
