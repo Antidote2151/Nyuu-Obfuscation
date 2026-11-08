@@ -1,0 +1,10 @@
+{
+  "name": "nyuu-build-sea",
+  "private": true,
+  "description": "Build Nyuu as a Node single executable application (needs Node >= 25.5)",
+  "license": "CC0-1.0",
+  "main": "build.js",
+  "dependencies": {
+    "browserify": "^17.0.1"
+  }
+}

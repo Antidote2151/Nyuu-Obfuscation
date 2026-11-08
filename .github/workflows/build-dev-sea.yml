@@ -1,0 +1,71 @@
+name: Build dev SEA binaries
+on:
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: 26.13.0
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - { runner: windows-2025,     name: win64,          exe: nyuu.exe }
+        - { runner: macos-15,         name: macos-arm64,    exe: nyuu }
+        - { runner: macos-15-intel,   name: macos-x64,      exe: nyuu }
+        - { runner: ubuntu-24.04,     name: linux-amd64,    exe: nyuu }
+        - { runner: ubuntu-24.04-arm, name: linux-aarch64,  exe: nyuu }
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm install --omit=dev --ignore-scripts
+      - run: npm install
+        working-directory: sea
+      - run: node sea/build.js
+      - run: node sea/smoke.js sea/out/${{ matrix.exe }}
+      - uses: actions/upload-artifact@v4
+        with:
+          path: |
+            sea/out/${{ matrix.exe }}
+            config-sample.json
+          name: nyuu-${{ github.ref_name }}-${{ matrix.name }}
+          retention-days: 5
+
+  # Alpine/musl: the official Node binaries are glibc-only, use the musl builds from unofficial-builds.nodejs.org
+  build-musl:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - { runner: ubuntu-24.04,     arch: x64,   name: linux-musl-amd64 }
+        - { runner: ubuntu-24.04-arm, arch: arm64, name: linux-musl-aarch64 }
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build in Alpine
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src -e V=v${{ env.NODE_VERSION }} -e A=${{ matrix.arch }} alpine:3.22 sh -ec '
+            apk add --no-cache build-base python3 linux-headers libstdc++ curl xz
+            F=node-$V-linux-$A-musl.tar.xz
+            curl -fsSLO https://unofficial-builds.nodejs.org/download/release/$V/$F
+            curl -fsSL https://unofficial-builds.nodejs.org/download/release/$V/SHASUMS256.txt | grep " $F\$" | sha256sum -c
+            tar -xJf $F -C /opt && rm $F
+            export PATH=/opt/node-$V-linux-$A-musl/bin:$PATH
+            npm install --omit=dev --ignore-scripts
+            (cd sea && npm install)
+            node sea/build.js
+            node sea/smoke.js sea/out/nyuu
+          '
+      - uses: actions/upload-artifact@v4
+        with:
+          path: |
+            sea/out/nyuu
+            config-sample.json
+          name: nyuu-${{ github.ref_name }}-${{ matrix.name }}
+          retention-days: 5
