@@ -7,7 +7,7 @@ var python = null;
 var buildArch = process.env.BUILD_ARCH || "x64"; // x86, x64, arm64
 var buildOs = process.env.BUILD_OS || os.platform();
 var nexeBase = './build';
-var nodeVer = process.env.BUILD_NODEVER || '24.22.1';
+var nodeVer = process.env.BUILD_NODEVER || '26.13.0';
 var staticness = process.env.BUILD_STATIC || '--fully-static'; // set to '--partly-static' if building with glibc
 var vsSuite = null; // if on Windows, and it's having trouble finding Visual Studio, try set this to, e.g. 'vs2019' or 'vs2017'
 // downloads can be disabled by editing the 'sourceUrl' line below; source code needs to be placed in `${nexeBase}/${nodeVer}`

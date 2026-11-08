@@ -32,6 +32,10 @@ jobs:
           flags: '--pending-deprecation --throw-deprecation --trace-warnings'
           mocha: '11'
           python: ''
+        - version: '26.13.0'
+          flags: '--pending-deprecation --throw-deprecation --trace-warnings'
+          mocha: '11'
+          python: ''
     name: Test on Node v${{ matrix.version }}
     runs-on: ubuntu-latest
     steps:

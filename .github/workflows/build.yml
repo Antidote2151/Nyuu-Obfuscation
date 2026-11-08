@@ -37,11 +37,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - runner: ubuntu-24.04
+        - runner: ubuntu-26.04
           arch: x64
           xz_bcj: --x86
           name: amd64
-        - runner: ubuntu-24.04-arm
+        - runner: ubuntu-26.04-arm
           arch: arm64
           xz_bcj: 
           name: aarch64
@@ -49,10 +49,10 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
-      # Node 24 needs GCC >= 12.2, the musl.cc cross toolchains are GCC 11, so build natively on Alpine (musl) instead
+      # Node 26 needs GCC >= 13.2, the musl.cc cross toolchains are GCC 11, so build natively on Alpine (musl) instead
       - name: Build in Alpine
         run: |
-          docker run --rm -v "$PWD:/src" -w /src -e BUILD_ARCH=${{ matrix.arch }} -e BUILD_LOGLEVEL=verbose alpine:3.22 sh -ec '
+          docker run --rm -v "$PWD:/src" -w /src -e BUILD_ARCH=${{ matrix.arch }} -e BUILD_LOGLEVEL=verbose alpine:3.24 sh -ec '
             apk add --no-cache build-base python3 linux-headers nodejs npm
             npm install --omit=dev --ignore-scripts
             cd nexe
@@ -71,7 +71,7 @@ jobs:
 
   build-macos-arm64:
     name: Build macOS ARM64 binary
-    runs-on: macos-15
+    runs-on: macos-26
     env:
       BUILD_ARCH: arm64
       BUILD_LOGLEVEL: verbose
@@ -96,7 +96,7 @@ jobs:
 
   build-macos-x64:
     name: Build macOS x64 binary
-    runs-on: macos-15-intel
+    runs-on: macos-26-intel
     env:
       BUILD_ARCH: x64
       BUILD_LOGLEVEL: verbose
