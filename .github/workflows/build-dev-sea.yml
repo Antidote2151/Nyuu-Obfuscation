@@ -1,6 +1,8 @@
 name: Build dev SEA binaries
 on:
   workflow_dispatch:
+  push:
+    branches: [sea] # workflow_dispatch only works once the workflow is on the default branch
 
 env:
   NODE_VERSION: 26.13.0
