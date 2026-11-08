@@ -21,8 +21,8 @@ jobs:
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: npm install --omit=dev --ignore-scripts
@@ -30,7 +30,7 @@ jobs:
         working-directory: sea
       - run: node sea/build.js
       - run: node sea/smoke.js sea/out/${{ matrix.exe }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           path: |
             sea/out/${{ matrix.exe }}
@@ -49,7 +49,7 @@ jobs:
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build in Alpine
         run: |
           docker run --rm -v "$PWD:/src" -w /src -e V=v${{ env.NODE_VERSION }} -e A=${{ matrix.arch }} alpine:3.22 sh -ec '
@@ -64,7 +64,7 @@ jobs:
             node sea/build.js
             node sea/smoke.js sea/out/nyuu
           '
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           path: |
             sea/out/nyuu
