@@ -13,15 +13,10 @@ jobs:
       BUILD_LOGLEVEL: verbose
     steps:
       - uses: ilammy/setup-nasm@v1
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - uses: actions/checkout@v4
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/checkout@v7
       # node-gyp supplied by Win2025 image fails to detect VS2026 - so force update it
       - run: npm install --global npm
       - run: npm install --omit=dev --ignore-scripts
@@ -34,7 +29,7 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./nyuu.7z
-          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-win64.7z
+          asset_name: nyuu-${{ github.event.release.tag_name }}-win64.7z
           asset_content_type: application/octet-stream
   
   build-linux:
@@ -53,12 +48,7 @@ jobs:
     name: Build ${{ matrix.name }} Linux binary
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/checkout@v7
       # Node 24 needs GCC >= 12.2, the musl.cc cross toolchains are GCC 11, so build natively on Alpine (musl) instead
       - name: Build in Alpine
         run: |
@@ -71,13 +61,11 @@ jobs:
             strip nyuu
           '
       - run: tar --group=nobody --owner=nobody -cf - -C nexe nyuu ../config-sample.json | xz -9e ${{ matrix.xz_bcj }} --lzma2 > nyuu.txz
-      - uses: sekwah41/upload-release-assets@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - uses: shogo82148/actions-upload-release-asset@v1
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }} 
+          upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./nyuu.txz
-          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-linux-${{ matrix.name }}.tar.xz
+          asset_name: nyuu-${{ github.event.release.tag_name }}-linux-${{ matrix.name }}.tar.xz
           asset_content_type: application/octet-stream
 
 
@@ -88,15 +76,10 @@ jobs:
       BUILD_ARCH: arm64
       BUILD_LOGLEVEL: verbose
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - run: npm install --production
       - run: (cd nexe && npm install --production)
       - run: (cd nexe && node build)
@@ -108,7 +91,7 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./nyuu.txz
-          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-mac-arm64.tar.xz
+          asset_name: nyuu-${{ github.event.release.tag_name }}-mac-arm64.tar.xz
           asset_content_type: application/octet-stream
 
   build-macos-x64:
@@ -118,15 +101,10 @@ jobs:
       BUILD_ARCH: x64
       BUILD_LOGLEVEL: verbose
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - run: npm install --production
       - run: (cd nexe && npm install --production)
       - run: (cd nexe && node build)
@@ -135,6 +113,6 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./nyuu.txz
-          asset_name: nyuu-${{ steps.get_release.outputs.tag_name }}-mac-x64.tar.xz
+          asset_name: nyuu-${{ github.event.release.tag_name }}-mac-x64.tar.xz
           asset_content_type: application/octet-stream
 

@@ -10,8 +10,8 @@ jobs:
       BUILD_ARCH: arm64
       BUILD_LOGLEVEL: verbose
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - run: npm install --production
@@ -21,7 +21,7 @@ jobs:
           CC: cc
           CXX: c++
       - run: tar --owner=$(id -un) --group=staff -cf - -C nexe nyuu ../config-sample.json | xz -9e > nyuu.txz
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           path: ./nyuu.txz
           name: nyuu-${{ github.ref_name }}-mac-arm64.tar.xz
@@ -34,15 +34,15 @@ jobs:
       BUILD_ARCH: x64
       BUILD_LOGLEVEL: verbose
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - run: npm install --production
       - run: (cd nexe && npm install --production)
       - run: (cd nexe && node build)
       - run: tar --owner=$(id -un) --group=staff -cf - -C nexe nyuu ../config-sample.json | xz -9e > nyuu.txz
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           path: ./nyuu.txz
           name: nyuu-${{ github.ref_name }}-mac-x64.tar.xz
