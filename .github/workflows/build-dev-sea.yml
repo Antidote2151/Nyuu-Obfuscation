@@ -14,10 +14,10 @@ jobs:
       matrix:
         include:
         - { runner: windows-2025,     name: win64,          exe: nyuu.exe }
-        - { runner: macos-15,         name: macos-arm64,    exe: nyuu }
-        - { runner: macos-15-intel,   name: macos-x64,      exe: nyuu }
-        - { runner: ubuntu-24.04,     name: linux-amd64,    exe: nyuu }
-        - { runner: ubuntu-24.04-arm, name: linux-aarch64,  exe: nyuu }
+        - { runner: macos-26,         name: macos-arm64,    exe: nyuu }
+        - { runner: macos-26-intel,   name: macos-x64,      exe: nyuu }
+        - { runner: ubuntu-26.04,     name: linux-amd64,    exe: nyuu }
+        - { runner: ubuntu-26.04-arm, name: linux-aarch64,  exe: nyuu }
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     steps:
@@ -44,15 +44,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - { runner: ubuntu-24.04,     arch: x64,   name: linux-musl-amd64 }
-        - { runner: ubuntu-24.04-arm, arch: arm64, name: linux-musl-aarch64 }
+        - { runner: ubuntu-26.04,     arch: x64,   name: linux-musl-amd64 }
+        - { runner: ubuntu-26.04-arm, arch: arm64, name: linux-musl-aarch64 }
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
       - name: Build in Alpine
         run: |
-          docker run --rm -v "$PWD:/src" -w /src -e V=v${{ env.NODE_VERSION }} -e A=${{ matrix.arch }} alpine:3.22 sh -ec '
+          docker run --rm -v "$PWD:/src" -w /src -e V=v${{ env.NODE_VERSION }} -e A=${{ matrix.arch }} alpine:3.24 sh -ec '
             apk add --no-cache build-base python3 linux-headers libstdc++ curl xz
             F=node-$V-linux-$A-musl.tar.xz
             curl -fsSLO https://unofficial-builds.nodejs.org/download/release/$V/$F
