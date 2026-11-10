@@ -236,9 +236,8 @@ module.exports = {
 	startSrv: function(config, uploader, logger, startTime) {
 		var server;
 		if(config.type == 'http') {
-			var url = require('url');
 			server = require('http').createServer(function(req, resp) {
-				var path = url.parse(req.url).pathname.replace(/\/$/, '');
+				var path = new URL(req.url, 'http://localhost').pathname.replace(/\/$/, '');
 				var m;
 				if(m = path.match(/^\/(post|check)queue\/?$/)) {
 					// dump post/check queue

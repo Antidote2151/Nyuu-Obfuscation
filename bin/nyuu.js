@@ -1014,11 +1014,12 @@ if(argv.server && argv.server.length) {
 	var baseServ = ulOpts.servers[0];
 	var baseJson = JSON.stringify(baseServ), baseConnect = util.extend({}, baseServ.connect); // snapshot before the first --server may modify it
 	argv.server.forEach(function(s, i) {
-		var u = require('url').parse(s, true);
-		if(!u.hostname || (u.protocol != 'nntp:' && u.protocol != 'nntps:'))
+		var u;
+		try { u = new URL(s); } catch(x) {}
+		if(!u || !u.hostname || (u.protocol != 'nntp:' && u.protocol != 'nntps:'))
 			error('Invalid value for `--server`: ' + s + ' (expected nntp[s]://[user[:pass]@]host[:port][?connections=N])');
-		var conns = u.query.connections;
-		if(conns !== undefined && !(''+conns).match(/^\d+$/))
+		var conns = u.searchParams.has('connections') ? u.searchParams.get('connections') : undefined;
+		if(conns !== undefined && !conns.match(/^\d+$/))
 			error('Invalid connections specified for `--server`: ' + s);
 
 		var serv;
@@ -1030,14 +1031,12 @@ if(argv.server && argv.server.length) {
 			serv.checkConnections = 0; // extra servers only post
 			ulOpts.servers.push(serv);
 		}
-		serv.connect.host = u.hostname;
+		serv.connect.host = u.hostname.replace(/^\[(.*)\]$/, '$1'); // IPv6 without brackets
 		serv.connect.port = u.port ? u.port|0 : null;
 		serv.secure = u.protocol == 'nntps:';
 		// never inherit login, so credentials aren't sent to another provider
-		var auth = u.auth || '';
-		var sep = auth.indexOf(':');
-		serv.user = sep == -1 ? auth : auth.substring(0, sep);
-		serv.password = sep == -1 ? '' : auth.substring(sep + 1);
+		serv.user = decodeURIComponent(u.username);
+		serv.password = decodeURIComponent(u.password);
 		if(conns !== undefined) serv.postConnections = conns|0;
 		else if(!serv.postConnections) serv.postConnections = argv.connections || 3;
 	});
