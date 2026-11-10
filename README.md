@@ -16,6 +16,10 @@ This fork has the following additional functions:
 - Randomize yenc header filename for every article
 - Randomize date for every article
 - Remove User Agent
+- Post to several servers/accounts at once with `--server` (can be repeated)
+- `--connection-threads` works with current Node.js versions again; it moves
+  connections (including TLS encryption) to worker threads, which helps when the
+  upload speed is limited by a single CPU core
 
 In my opinion, this gives you the greatest possible privacy when posting on Usenet.
 
@@ -141,9 +145,9 @@ Installation & Requirements
 Pre-Built Binaries
 ------------------
 
-Static pre-built binaries with Node 4.x may be found on [the releases
-page](https://github.com/animetosho/Nyuu/releases) if I can be bothered to
-provide them. These can simply be extracted and run.
+Static pre-built binaries (built with Node 26) can be found on [the releases
+page](https://github.com/Antidote2151/Nyuu-Obfuscation/releases). These can
+simply be extracted and run.
 
 ### Arch
 
@@ -197,7 +201,8 @@ manager](https://nodejs.org/en/download/package-manager/) or
 [NodeSource](https://github.com/nodesource/distributions). For Windows/OSX
 builds, they [can be found here](https://nodejs.org/en/download/stable/).
 Although node.js 0.10.x is supported, newer versions of Node (\>=4 recommended)
-provide greatly improved SSL performance.
+provide greatly improved SSL performance. Some options need newer versions,
+e.g. `--server` requires Node 10 and `--connection-threads` Node 11.7 or later.
 
 ### Dependencies
 
@@ -280,56 +285,39 @@ Note that some test cases test functionality of timeouts; to reduce time it
 takes to run these tests, timeouts are set relatively small, which means that a
 slow computer may not be able to service them as expected.
 
+*test/cli.js* runs the actual command line (`bin/nyuu.js`) against a local test
+server and checks the effect of the options in *help-full.txt*: uploaded data,
+article headers, NZB contents, console output and exit codes (needs Node 12 or
+later, skipped otherwise). When adding or changing an option, add a test there.
+On Windows, a test may fail with `EACCES` if its port falls into a range
+reserved by Windows; this doesn't affect Nyuu itself.
+
+Benchmarking
+------------
+
+*bench/dummy-nntp.js* is a local NNTP(S) server that accepts posts immediately
+and discards them, so you can measure Nyuu's own upload speed without a
+provider. Start it, then run *bench/local-bench.sh* (see the comments in both
+files for options). *bench/stats-preload.js* prints the CPU usage per thread.
+
 Building Binary
 ---------------
 
-A basic script to compile the Nyuu binary is provided in the *nexe* folder. The script has been tested with NodeJS 12.20.0 and may work on other 12.x.x versions. For NodeJS 8.x.x and older, see section below.
+A basic script to compile the Nyuu binary is provided in the *nexe* folder. It builds with NodeJS 26.13.0 by default (set `BUILD_NODEVER` to change it); the release workflow uses the same script.
 
 1. If you haven’t done so already, do an `npm install` in Nyuu’s folder to ensure its dependencies are available
 2. Enter the *nexe* folder and do an `npm install` to pull down required build packages (note, nexe requires NodeJS 10 or greater)
 3. If desired, edit the variables at the top of *nexe/build.js*
 4. Run `node build`. If everything worked, there’ll eventually be a *nyuu* or *nyuu.exe* binary built.
-   If it fails during compilation, enter the *nexe/build/12.20.0* (or whatever version of NodeJS you’re using) and get more info by:
+   If it fails during compilation, enter the *nexe/build/26.13.0* (or whatever version of NodeJS you’re using) and get more info by:
    * Linux: build using the `make` command
    * Windows: build using `vcbuild.bat` followed by build options, e.g. `vcbuild nosign x86 noetw intl-none release static no-cctest without-intl ltcg`
 5. If building for Linux, optionally `strip` the executable to reduce size
 
-### Building for NodeJS 8.x.x or older
-
-Compiling Nyuu into a single binary can be done via
-[nexe](https://github.com/nexe/nexe) 1.x. There is a little complication with
-bundling the *yencode* module, but a rather fragile script has been supplied in
-*nexe1/build.js* to help with the process. The following general steps need to be
-taken:
-
-1.  Ensure that *nexe* is installed (doesn’t need to be globally installed) and
-    [its requirements](https://github.com/nexe/nexe#building-requirements) met
-2.  Download a Node.js source package. The script has mostly been tested with
-    Node 4.x.x, it may work with other versions
-3.  The required Nyuu libraries need to be installed into the *node_modules*
-    folder
-4.  Inside the *nexe1* folder (the one containing *build.js*), create the
-    following two folders: *node* and *yencode-src*
-5.  Inside the *node* folder, create a folder with the version number of the
-    package you downloaded in step 2, for example “4.9.1”. Inside *this* folder,
-    create one named “\_” and place the downloaded sources in this folder. After
-    doing this, the file *nexe1/node/x.x.x/\_/node.gyp* should exist, where
-    *x.x.x* is the node version number
-6.  Inside the *yencode-src* folder, copy the source code for the *yencode* (v1.0.x)
-    module
-7.  Edit *nexe1/build.js*; options that are likely to be edited are at the top of
-    the file. You’ll likely need to change *nodeVer* to be the version of node
-    you’re using
-8.  You may need to edit *bin/nyuu.js* to fix the location of nexe’s *package.json* path (search *bin/nyuu.js* for `nexe/package.json` and update if necessary)
-9.  In the *nexe1* folder, run *build.js*. This script patches node to embed the
-    yencode module, and customises a few compiler options, then calls nexe to
-    build the final executable. If it worked, you should get a binary named
-    *nyuu* or *nyuu.exe* in the *nexe1* folder
-
-Note that this will be built with the `-flto` option on non-Windows platforms.
-If this causes build failures, your system’s `ar` utility may not support LTO
-objects, which can be worked around if you have `gcc-ar` installed by issuing a
-command like `export AR=gcc-ar`
+A much faster alternative for test builds is a Node *single executable application* (SEA), which
+doesn't compile Node itself. It lives on the `sea` branch: run the *Build dev SEA binaries* workflow
+manually and select the `sea` branch. The Linux SEA binary needs glibc and `libatomic` (e.g.
+`apt install libatomic1`); release binaries are still built with nexe.
 
 Usage
 =====
