@@ -11,26 +11,29 @@ function NNTPServer(opts) {
 	this.postIdMap = {};
 	this.groups = ['limbs', 'rifles', 'bloodbath']; // list of available groups
 	this.connectHook = function(){};
+	this.commands = []; // every received command line (excluding post data)
+	this.connCount = 0;
 	
-	var cOpts = {};
+	var cOpts = {allowHalfOpen: !!opts.halfOpen}; // halfOpen: don't close when the client does (for servers that ignore QUIT)
 	if(this.opts.ssl) {
 		var readFile = function(f) {
 			return require('fs').readFileSync(__dirname + require('path').sep + f)
 		};
-		cOpts = {
-			key: readFile('_ssl.key'),
-			cert: readFile('_ssl.crt'),
-		};
+		cOpts.key = readFile('_ssl.key');
+		cOpts.cert = readFile('_ssl.crt');
 	}
 	
 	this.server = require(this.opts.ssl ? 'tls' : 'net').createServer(cOpts, function(c) {
 		var conn = new NNTPConnection(this.opts, this, c);
-		this.connectHook(conn);
+		this.connCount++;
+		if(this.connectHook(conn) === false) return; // hook dropped the connection
 		conn._respond(opts.denyPost ? 201 : 200, 'host test server');
 	}.bind(this));
 }
 NNTPServer.prototype = {
 	onPostHook: null,
+	// if set, called with (raw article, NNTPConnection) before it's accepted; return 'silent' to send no response, or a code (e.g. 441) to reject it
+	postDataHook: null,
 	storePostData: true,
 	
 	groupNumPosts: function(grp) {
@@ -170,10 +173,16 @@ NNTPConnection.prototype = {
 		if(p >= 0) {
 			// post received
 			var messageId;
-			if(messageId = this.addPost(this.dataQueue.substring(0, p))) {
-				this._respond(240, '<' + messageId + '> Article received ok');
+			var hookAction = this.server.postDataHook && this.server.postDataHook(this.dataQueue.substring(0, p), this);
+			var okCode = {POST: 240, IHAVE: 235, XREPLIC: 235, TAKETHIS: 239}[this.postCmd];
+			if(hookAction == 'silent') {
+				// don't respond
+			} else if(hookAction) {
+				this._respond(hookAction, 'Rejected by test');
+			} else if(messageId = this.addPost(this.dataQueue.substring(0, p))) {
+				this._respond(okCode, '<' + messageId + '> Article received ok');
 			} else {
-				this._respond(441, ''); // TODO: fix 
+				this._respond(this.postCmd == 'POST' ? 441 : 437, ''); // TODO: fix
 			}
 			this.dataQueue = this.dataQueue.substring(p+5);
 			this.postMode = false;
@@ -181,6 +190,7 @@ NNTPConnection.prototype = {
 		}
 	},
 	onRequest: function(req, data) {
+		this.server.commands.push(data ? req + ' ' + data : req);
 		if(this.opts.requestHook) {
 			if(this.opts.requestHook.call(this, req, data))
 				return;
@@ -238,7 +248,16 @@ NNTPConnection.prototype = {
 			case 'POST':
 				if(data) throw new Error('Unexpected POST params');
 				this.postMode = true;
+				this.postCmd = req;
 				this._respond(340, 'Send article');
+			break;
+			case 'IHAVE':
+			case 'XREPLIC':
+			case 'TAKETHIS':
+				this.postMode = true;
+				this.postCmd = req;
+				if(req != 'TAKETHIS') // TAKETHIS (streaming) sends the article without waiting
+					this._respond(335, 'Send article');
 			break;
 			case 'QUIT':
 				this._respond(205, 'bye');
@@ -254,7 +273,7 @@ NNTPConnection.prototype = {
 		var p = data.indexOf('\r\n\r\n');
 		if(p < 0) return false;
 		sData = sData.substring(0, p+2);
-		data = data.slice(Buffer.byteLength(sData) + 2);
+		data = data.slice(Buffer.byteLength(sData, 'binary') + 2); // data is a binary string, so non-ASCII header bytes count as one
 		
 		// parse headers
 		var h = {};

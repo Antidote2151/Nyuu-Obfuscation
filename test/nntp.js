@@ -98,8 +98,11 @@ function TestServer(onConn) {
 			this._conn = null;
 		}.bind(this));
 		c.once('end', function() {
+			// defer, so responses scheduled while handling the last data still go out (like a real server answering QUIT); newer Node emits 'end' sooner than Node 12
 			if(this.autoClose)
-				this._conn.end();
+				setImmediate(function() {
+					if(this._conn) this._conn.end();
+				}.bind(this));
 		}.bind(this));
 		c.setNoDelay(); // make tests a little faster
 		onConn();

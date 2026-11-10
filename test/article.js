@@ -13,7 +13,7 @@ describe('Article', function() {
 
 var simpleCheck = function(pool) {
 	var a = new MultiEncoder('some\nfile', 6, 3);
-	assert.equal(a.filename, 'some\nfile');
+	assert.equal(a.filename, 'somefile'); // line breaks are stripped from the stored name
 	assert.ok(a.line_size);
 	
 	var s;
@@ -21,7 +21,7 @@ var simpleCheck = function(pool) {
 	a.setHeaders({
 		Subject: 'first post!',
 		From: function(filename, filesize, part, parts, post) {
-			assert.equal(filename, 'some\nfile');
+			assert.equal(filename, 'somefile');
 			assert.equal(filesize, 6);
 			assert.equal(part, 1);
 			assert.equal(parts, 2);
@@ -49,7 +49,7 @@ var simpleCheck = function(pool) {
 	a.setHeaders({
 		'X-Test': '',
 		'Message-ID': function(filename, filesize, part, parts, post) {
-			assert.equal(filename, 'some\nfile');
+			assert.equal(filename, 'somefile');
 			assert.equal(filesize, 6);
 			assert.equal(part, 2);
 			assert.equal(parts, 2);
