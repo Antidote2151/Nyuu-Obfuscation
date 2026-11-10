@@ -1519,7 +1519,7 @@ describe('production option set', function() {
 					var dir = mkTmp(), exp = {'a.bin': mkFile(dir, 'a.bin', 2000000), 'b.bin': mkFile(dir, 'b.bin', 700000)};
 					var page;
 					run(['-h', '127.0.0.1', '-P', s1.port, '-S', '--ignore-cert', '-u', 'USER', '-p', 'PASS', '-n', '4', '--server', 'nntps://u2:p2@127.0.0.1:' + s2.port + '?connections=4',
-						'--connection-threads', '2', '-a', '700K', '--progress', 'http:127.0.0.1:' + httpPort, '--progress', 'log:200ms', '--groups', GROUP, '-o', 'out.nzb', '-O',
+						'--connection-threads', '2', '-a', '700K', '--progress', 'http:localhost:' + httpPort, '--progress', 'log:200ms', '--groups', GROUP, '-o', 'out.nzb', '-O',
 						'-f', 'Poster <p@p>', '--message-id', '${rand(24)}@nyuu', '--subject', '{filename}', '--nzb-subject', '{filename}', '--nzb-poster', 'Poster <p@p>',
 						'--obfuscate-articles', '--connect-retries', '5', '--post-retries', '10', '--post-retry-delay', '1', '--retry-on-bad-resp', '--nzb-del-incomplete',
 						'--nzb-file-mode', 'defer', '-r', 'keep', '--post-chunk-size', '0', '--max-upload-rate', '0', 'a.bin', 'b.bin'], {cwd: dir, during: function() {

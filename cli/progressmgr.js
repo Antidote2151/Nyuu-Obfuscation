@@ -343,14 +343,22 @@ module.exports = {
 				logger.info('Status ' + config.type.toUpperCase() + ' server listening at ' + config.socket);
 			});
 		} else {
-			server.listen(config.port, config.host, function() {
-				var addr = server.address();
-				if(addr.family == 'IPv6')
-					addr = '[' + addr.address + ']:' + addr.port;
-				else
-					addr = addr.address + ':' + addr.port;
-				logger.info('Status ' + config.type.toUpperCase() + ' server listening on ' + addr);
+			// resolve IPv4 first like Node < 17 did, otherwise 'localhost' binds only to ::1 and clients using 127.0.0.1 can't connect
+			var listen = function(host) {
+				server.listen(config.port, host, function() {
+					var addr = server.address();
+					if(addr.family == 'IPv6')
+						addr = '[' + addr.address + ']:' + addr.port;
+					else
+						addr = addr.address + ':' + addr.port;
+					logger.info('Status ' + config.type.toUpperCase() + ' server listening on ' + addr);
+				});
+			};
+			if(config.host) require('dns').lookup(config.host, {order: 'ipv4first'}, function(err, address) {
+				if(err) server.emit('error', err);
+				else listen(address);
 			});
+			else listen();
 		}
 	}
 };
