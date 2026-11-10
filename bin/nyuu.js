@@ -902,6 +902,7 @@ if(ulOpts.cli) {
 	if(argv.quiet || argv.verbose) {
 		delete cOpts.quiet;
 		delete cOpts.verbose;
+		delete cOpts['log-level']; // config.js sets a default log-level, which would otherwise always win over -q/-v
 	}
 	for(var k in cOpts) {
 		if(!(k in argv) && k[0] != ' ')
