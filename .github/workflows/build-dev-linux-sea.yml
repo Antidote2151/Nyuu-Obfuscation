@@ -1,6 +1,8 @@
 name: Build dev Linux SEA binary
 on:
   workflow_dispatch:
+  push: # workflow_dispatch only works once the workflow is on the default branch
+    branches: [node24]
 
 jobs:
   build-dev-linux-sea:
