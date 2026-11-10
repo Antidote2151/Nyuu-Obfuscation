@@ -5,6 +5,16 @@ var fs = require('fs');
 
 describe('Socket thread', function() {
 
+// threads receive opts.connect as is, so the default port must be filled in there (not only in a local copy)
+it('should pass the default port to connection threads', function() {
+	var NNTP = require('../lib/nntp');
+	[[true, 563], [false, 119]].forEach(function(t) {
+		var opts = {connect: {host: '127.0.0.1', port: null}, secure: t[0], useThreads: true};
+		new NNTP(opts);
+		assert.equal(opts.connect.port, t[1]);
+	});
+});
+
 // regression: forwarding received data used to transfer (detach) a buffer Node reuses for TLS reads, crashing the thread on the next read
 it('should receive multiple TLS reads', function(done) {
 	var server = require('tls').createServer({

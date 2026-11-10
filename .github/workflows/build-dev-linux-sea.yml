@@ -25,9 +25,10 @@ jobs:
       - name: Smoke test
         run: |
           head -c 100M /dev/urandom > /tmp/t.bin
-          node bench/dummy-nntp.js 5563 2 &
+          # default NNTPS port, so the test also covers -h/--server without an explicit port
+          sudo "$(which node)" bench/dummy-nntp.js 563 2 &
           sleep 1
-          sea/out/nyuu -h 127.0.0.1 -P 5563 -S --ignore-cert -u u -p p -n 8 --connection-threads 2 -a 700K -g a.b.test -o /tmp/t.nzb /tmp/t.bin
+          sea/out/nyuu -h 127.0.0.1 -S --ignore-cert -u u -p p -n 8 --server "nntps://a:b@127.0.0.1?connections=8" --connection-threads 2 -a 700K -g a.b.test -o /tmp/t.nzb /tmp/t.bin
           test "$(grep -c '<segment ' /tmp/t.nzb)" = 147
       - run: tar --group=nobody --owner=nobody -cf - -C sea/out nyuu -C ../.. config-sample.json | xz -9 --x86 --lzma2 > nyuu.txz
       - uses: actions/upload-artifact@v7
