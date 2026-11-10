@@ -195,14 +195,12 @@ page](https://github.com/animetosho/Nyuu/releases).
 
 ### Node.js
 
-Nyuu should run on node.js 0.10.x and later. Recent Linux distributions should
-have *nodejs* in their repositories, otherwise, see [installing via package
+This fork requires node.js 24 or later (older versions aren't tested or
+supported). Recent Linux distributions should have *nodejs* in their
+repositories, otherwise, see [installing via package
 manager](https://nodejs.org/en/download/package-manager/) or
 [NodeSource](https://github.com/nodesource/distributions). For Windows/OSX
 builds, they [can be found here](https://nodejs.org/en/download/stable/).
-Although node.js 0.10.x is supported, newer versions of Node (\>=4 recommended)
-provide greatly improved SSL performance. Some options need newer versions,
-e.g. `--server` requires Node 10 and `--connection-threads` Node 11.7 or later.
 
 ### Dependencies
 
@@ -287,8 +285,8 @@ slow computer may not be able to service them as expected.
 
 *test/cli.js* runs the actual command line (`bin/nyuu.js`) against a local test
 server and checks the effect of the options in *help-full.txt*: uploaded data,
-article headers, NZB contents, console output and exit codes (needs Node 12 or
-later, skipped otherwise). When adding or changing an option, add a test there.
+article headers, NZB contents, console output and exit codes. When adding or
+changing an option, add a test there.
 On Windows, a test may fail with `EACCES` if its port falls into a range
 reserved by Windows; this doesn't affect Nyuu itself.
 

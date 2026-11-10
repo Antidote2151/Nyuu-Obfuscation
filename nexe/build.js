@@ -64,27 +64,17 @@ if(os.platform() == 'win32') {
 
 // invoke nexe
 // --without-corepack
-var configureArgs = [staticness, '--without-npm', '--with-intl=none', '--without-node-options', '--without-inspector', '--without-siphash', '--dest-cpu=' + buildArch];
-// removed in newer Node, configure errors on unknown args
-if(parseFloat(nodeVer) < 20) configureArgs.push('--without-dtrace', '--without-etw');
-if(parseFloat(nodeVer) < 24) configureArgs.push('--without-report');
-var vcbuildArgs = ["nosign", buildArch, "intl-none", "release", "static"];
-if(parseFloat(nodeVer) < 20) vcbuildArgs.push("noetw"); // removed later, newer vcbuild errors on unknown args
+if(parseFloat(nodeVer) < 24)
+	throw new Error('Building requires NodeJS >= 24 (BUILD_NODEVER is ' + nodeVer + ')');
+
+var configureArgs = [staticness, '--without-npm', '--with-intl=none', '--without-node-options', '--without-inspector', '--without-siphash', '--dest-cpu=' + buildArch, '--without-intl'];
+var vcbuildArgs = ["nosign", buildArch, "intl-none", "release", "static", 'without-intl'];
 // --v8-lite-mode ?
-if(parseFloat(nodeVer) >= 8) {
-	configureArgs.push('--without-intl');
-	vcbuildArgs.push('without-intl');
-}
-if(parseFloat(nodeVer) >= 10) {
-	if(buildOs == 'linux')
-		configureArgs.push('--enable-lto');
-	if(buildOs == 'win32') {
-		configureArgs.push('--with-ltcg');
-		vcbuildArgs.push('ltcg', 'no-cctest');
-	}
-} else {
-	configureArgs.push('--without-perfctr');
-	vcbuildArgs.push('noperfctr');
+if(buildOs == 'linux')
+	configureArgs.push('--enable-lto');
+if(buildOs == 'win32') {
+	configureArgs.push('--with-ltcg');
+	vcbuildArgs.push('ltcg', 'no-cctest');
 }
 if(vsSuite) vcbuildArgs.push(vsSuite);
 
@@ -119,7 +109,7 @@ if(process.env.BUILD_CONFIGURE)
 if(process.env.BUILD_VCBUILD)
 	vcbuildArgs = vcbuildArgs.concat(process.env.BUILD_VCBUILD.split(' '));
 
-var v8gyp = parseFloat(nodeVer) >= 12 ? 'tools/v8_gypfiles/v8.gyp' : (parseFloat(nodeVer) >= 10 ? 'deps/v8/gypfiles/v8.gyp' : 'deps/v8/src/v8.gyp');
+var v8gyp = 'tools/v8_gypfiles/v8.gyp';
 
 nexe.compile({
 	input: null, // we'll overwrite _third_party_main instead
@@ -150,27 +140,12 @@ nexe.compile({
 	patches: [
 		// remove nexe's boot-nexe code + fix argv
 		async (compiler, next) => {
-			var bootFile = 'lib/internal/bootstrap_node.js';
-			if(parseFloat(nodeVer) >= 20)
-				bootFile = 'lib/internal/process/pre_execution.js';
-			else if(parseFloat(nodeVer) >= 12)
-				bootFile = 'lib/internal/bootstrap/pre_execution.js';
-			else if(parseFloat(nodeVer) >= 10)
-				bootFile = 'lib/internal/bootstrap/node.js';
-			
-			if(parseFloat(nodeVer) >= 20) {
-				// remove nexe's entry loader; argv is fixed up in our own main script (see below)
-				await compiler.replaceInFileAsync(bootFile, /initializeFrozenIntrinsics\(\);\s*!\(function.+?new Module.+?\}\)\(\);/s, "initializeFrozenIntrinsics();");
-				// nexe puts its fs patch into the CJS loader on these versions
-				await compiler.replaceInFileAsync('lib/internal/modules/cjs/loader.js', /if \(true\) \{.+?__nexe_patch\(.+?\}\n/s, '');
-			} else if(parseFloat(nodeVer) >= 12) {
-				// TODO: is the double'd javascript entry (by nexe) problematic?
-				await compiler.replaceInFileAsync(bootFile, /(initializePolicy|initializeFrozenIntrinsics)\(\);\s*!\(function.+?new Module.+?\}\)\(\);/s, "$1();");
-				
-				// fix argv
-				await compiler.replaceInFileAsync(bootFile, /patchProcessObject\(expandArgv1\);/, 'patchProcessObject(false); if(!process.send) process.argv.splice(1,0,"nyuu");');
-			}
-			
+			var bootFile = 'lib/internal/process/pre_execution.js';
+			// remove nexe's entry loader; argv is fixed up in our own main script (see below)
+			await compiler.replaceInFileAsync(bootFile, /initializeFrozenIntrinsics\(\);\s*!\(function.+?new Module.+?\}\)\(\);/s, "initializeFrozenIntrinsics();");
+			// nexe puts its fs patch into the CJS loader on these versions
+			await compiler.replaceInFileAsync('lib/internal/modules/cjs/loader.js', /if \(true\) \{.+?__nexe_patch\(.+?\}\n/s, '');
+
 			// I don't get the point of the fs patch, so just remove it...
 			await compiler.replaceInFileAsync(bootFile, /if \(true\) \{.+?__nexe_patch\(.+?\}\n/s, '');
 			
@@ -179,25 +154,17 @@ nexe.compile({
 		
 		// fix worker thread with third_party_main
 		async (compiler, next) => {
-			if(parseFloat(nodeVer) >= 20) {
-				// _third_party_main is gone; nexe redirects the main thread to run_main_module, point it at our own main script instead
-				await compiler.replaceInFileAsync('src/node.cc', /(if \(env->worker_context\(\) == nullptr\) \{\s*return StartExecution\(env, )"internal\/main\/run_main_module"/, '$1"internal/main/nyuu"');
-				if(!(await compiler.readFileAsync('src/node.cc')).contents.toString().includes('"internal/main/nyuu"'))
-					throw new Error('Failed to patch main entry into src/node.cc');
-				return next();
-			}
-			await compiler.replaceInFileAsync('src/node.cc', /StartExecution\(env, "internal\/main\/run_third_party_main"\)/, 'StartExecution(env, env->worker_context() == nullptr ? "internal/main/run_third_party_main" : "internal/main/worker_thread")');
+			// _third_party_main is gone; nexe redirects the main thread to run_main_module, point it at our own main script instead
+			await compiler.replaceInFileAsync('src/node.cc', /(if \(env->worker_context\(\) == nullptr\) \{\s*return StartExecution\(env, )"internal\/main\/run_main_module"/, '$1"internal/main/nyuu"');
+			if(!(await compiler.readFileAsync('src/node.cc')).contents.toString().includes('"internal/main/nyuu"'))
+				throw new Error('Failed to patch main entry into src/node.cc');
 			return next();
 		},
 		
 		// fix for building on Alpine
 		// https://gitlab.alpinelinux.org/alpine/aports/-/issues/8626
 		async (compiler, next) => {
-			if(parseFloat(nodeVer) >= 12) {
-				await compiler.replaceInFileAsync(v8gyp, /('target_defaults': \{)( 'cflags': \['-U_FORTIFY_SOURCE'\],)?/, "$1 'cflags': ['-U_FORTIFY_SOURCE'],");
-			} else {
-				await compiler.replaceInFileAsync(v8gyp, /('target_defaults': {'cflags': \['-U_FORTIFY_SOURCE'\]}, )?'targets': \[/, "'target_defaults': {'cflags': ['-U_FORTIFY_SOURCE']}, 'targets': [");
-			}
+			await compiler.replaceInFileAsync(v8gyp, /('target_defaults': \{)( 'cflags': \['-U_FORTIFY_SOURCE'\],)?/, "$1 'cflags': ['-U_FORTIFY_SOURCE'],");
 			await compiler.replaceInFileAsync('node.gyp', /('target_name': '(node_mksnapshot|mkcodecache|<\(node_core_target_name\)|<\(node_lib_target_name\))',)( 'cflags': \['-U_FORTIFY_SOURCE'\],)?/g, "$1 'cflags': ['-U_FORTIFY_SOURCE'],");
 			return next();
 		},
@@ -326,14 +293,6 @@ goto msbuild-found
 			return next();
 		},
 
-		// build fix for GCC 13: https://github.com/nodejs/node/commit/0be1c5728173ea9ac42843058e26b6268568acf0
-		async (compiler, next) => {
-			if(parseFloat(nodeVer) >= 20) return next();
-			await compiler.replaceInFileAsync('deps/v8/src/inspector/v8-string-conversions.h', /(#include <cstdint>)?(\s*#include <string>)/, "\n#include <cstdint>$2");
-			await compiler.replaceInFileAsync('deps/v8/src/base/logging.h', /(#include <cstdint>)?(\s*#include <cstring>)/, "\n#include <cstdint>$2");
-			return next();
-		},
-		
 		// fix build failure on macOS
 		// this code seems to be unused, and was later removed [https://github.com/madler/zlib/commit/4bd9a71f3539b5ce47f0c67ab5e01f3196dc8ef9]
 		async (compiler, next) => {
@@ -350,30 +309,9 @@ goto msbuild-found
 		
 		// add yencode into source list
 		async (compiler, next) => {
-			var bindingsFile;
-			if(parseFloat(nodeVer) >= 12) {
-				await compiler.replaceInFileAsync('node.gyp', /('deps\/histogram\/histogram\.gyp:histogram')(,'deps\/yencode\/binding\.gyp:yencode')?/g, "$1,'deps/yencode/binding.gyp:yencode'");
-				bindingsFile = 'src/node_binding.cc';
-			} else if(parseFloat(nodeVer) >= 10) {
-				await compiler.replaceInFileAsync('node.gyp', /('target_name': '<\(node_lib_target_name\)',)('dependencies': \['deps\/yencode\/binding\.gyp:yencode'\], )?/g, "$1'dependencies': ['deps/yencode/binding.gyp:yencode'], ");
-				bindingsFile = 'src/node_internals.h';
-			} else {
-				await compiler.replaceInFileAsync('node.gyp', /('target_name': '<\(node_lib_target_name\)',[^}]*?'dependencies': \[)('deps\/yencode\/binding\.gyp:yencode', )?/g, "$1'deps/yencode/binding.gyp:yencode', ");
-				bindingsFile = 'src/node_internals.h';
-			}
-			
-			// also add it as a valid binding
-			await compiler.replaceInFileAsync(bindingsFile, /(V\(async_wrap\))( V\(yencode\))?/, "$1 V(yencode)");
-			
-			// patch module whitelist
-			if(parseFloat(nodeVer) >= 12 && parseFloat(nodeVer) < 20) { // newer versions use internalBinding, which needs no whitelisting
-				// avoid nexe's methods to prevent double-writing this to node.gyp
-				const loaderFile = path.join(compiler.src, 'lib/internal/bootstrap/loaders.js');
-				let data = fs.readFileSync(loaderFile).toString();
-				data = data.replace(/('async_wrap',)( 'yencode',)?/, "$1 'yencode',");
-				fs.writeFileSync(loaderFile, data);
-			}
-			
+			await compiler.replaceInFileAsync('node.gyp', /('deps\/histogram\/histogram\.gyp:histogram')(,'deps\/yencode\/binding\.gyp:yencode')?/g, "$1,'deps/yencode/binding.gyp:yencode'");
+			// also add it as a valid binding (loaded via internalBinding, which needs no whitelisting)
+			await compiler.replaceInFileAsync('src/node_binding.cc', /(V\(async_wrap\))( V\(yencode\))?/, "$1 V(yencode)");
 			return next();
 		},
 		// copy yencode sources
@@ -389,34 +327,24 @@ goto msbuild-found
 			data = data.replace(/#include <node\.h>/g, '#include "../../../src/node.h"');
 			data = data.replace(/#if NODE_VERSION_AT_LEAST\(10, 7, 0\).+?NODE_MODULE_INIT.+?#endif/s,
 `#define NODE_WANT_INTERNALS 1
-#include "../../../src/${parseFloat(nodeVer) >= 20 ? 'node_binding.h' : 'node_internals.h'}"
+#include "../../../src/node_binding.h"
 #include <uv.h>
 static uv_once_t init_once = UV_ONCE_INIT;
 void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> context, void* priv)`
 			);
-			if(parseFloat(nodeVer) >= 20) {
-				data = data.replace(/(\nNODE_BINDING_CONTEXT_AWARE_INTERNAL\(yencode, yencode_init\))?$/, "\nNODE_BINDING_CONTEXT_AWARE_INTERNAL(yencode, yencode_init)");
-			} else if(parseFloat(nodeVer) >= 12) {
-				data = data.replace(/(\nNODE_MODULE_CONTEXT_AWARE_INTERNAL\(yencode, yencode_init\))?$/, "\nNODE_MODULE_CONTEXT_AWARE_INTERNAL(yencode, yencode_init)");
-			} else {
-				data = data.replace(/(\nNODE_BUILTIN_MODULE_CONTEXT_AWARE\(yencode, yencode_init\))?$/, "\nNODE_BUILTIN_MODULE_CONTEXT_AWARE(yencode, yencode_init)");
-			}
+			data = data.replace(/(\nNODE_BINDING_CONTEXT_AWARE_INTERNAL\(yencode, yencode_init\))?$/, "\nNODE_BINDING_CONTEXT_AWARE_INTERNAL(yencode, yencode_init)");
 			await compiler.setFileContentsAsync('deps/yencode/src/yencode.cc', data);
 			
 			data = await compiler.readFileAsync('deps/yencode/index.js');
 			data = data.contents.toString();
-			data = data.replace(/require\('[^'"]*\/([0-9a-z_]+)\.node'\)/g, parseFloat(nodeVer) >= 20 ? "internalBinding('$1')" : "process.binding('$1')");
+			data = data.replace(/require\('[^'"]*\/([0-9a-z_]+)\.node'\)/g, "internalBinding('$1')");
 			//fs.writeFileSync(path.join(compiler.src, 'lib', 'yencode.js'), data);
 			await compiler.setFileContentsAsync('lib/yencode.js', data);
 			
 			data = await compiler.readFileAsync('deps/yencode/binding.gyp');
 			data = data.contents.toString();
 			data = data.replace(/"target_name": "yencode",( "type": "static_library",)?/, '"target_name": "yencode", "type": "static_library",');
-			var includeListArr = ['"../../src"', '"../v8/include"', '"../uv/include"'];
-			if(parseFloat(nodeVer) < 12)
-				includeListArr.push('"../cares/include"');
-			var includeList = includeListArr.join(', ');
-			// include dirs are provided via CFLAGS/CXXFLAGS for macOS builds
+			// include dirs are provided via CFLAGS/CXXFLAGS
 			data = data.replace(/"enable_native_tuning%": 1,/, '"enable_native_tuning%": 0,');
 			await compiler.setFileContentsAsync('deps/yencode/binding.gyp', data);
 			
@@ -487,27 +415,17 @@ void yencode_init(Local<Object> exports, Local<Value> module, Local<Context> con
 			return next();
 		},
 		
-		// fix for NodeJS 12 on Windows toolsets
+		// own main script (replaces run_main_module, see above)
 		async (compiler, next) => {
-			if(parseFloat(nodeVer) >= 12 && parseFloat(nodeVer) < 13 && buildOs == 'win32') {
-				// No-op: rely on GYP_MSVS_TOOLSET_VERSION instead of patching vcxproj files
-			}
-			return next();
-		},
-		
-		// set _third_party_main (own main script on newer versions)
-		async (compiler, next) => {
-			const mainFile = parseFloat(nodeVer) >= 20 ? 'lib/internal/main/nyuu.js' : 'lib/_third_party_main.js';
+			const mainFile = 'lib/internal/main/nyuu.js';
 			const stream = fs.createWriteStream(compiler.src + '/' + mainFile);
-			if(parseFloat(nodeVer) >= 20) {
-				// what run_main_module + the old argv patch did; the bundle needs a userland require
-				stream.write(`const { prepareMainThreadExecution, markBootstrapComplete } = require('internal/process/pre_execution');
+			// what run_main_module + the old argv patch did; the bundle needs a userland require
+			stream.write(`const { prepareMainThreadExecution, markBootstrapComplete } = require('internal/process/pre_execution');
 prepareMainThreadExecution(false);
 markBootstrapComplete();
 if(!process.send) process.argv.splice(1,0,"nyuu");
 require = require('module').createRequire(process.execPath);
 `);
-			}
 			const pipe = b.bundle().pipe(stream);
 			return new Promise((resolve, reject) => {
 				pipe.once('error', reject);

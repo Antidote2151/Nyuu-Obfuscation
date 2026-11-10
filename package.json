@@ -19,7 +19,7 @@
   "bin": "bin/nyuu.js",
   "preferGlobal": true,
   "engines": {
-    "node": ">=0.10"
+    "node": ">=24"
   },
   "dependencies" : {
     "async" : "0.2.0 - 2.9999.9999",

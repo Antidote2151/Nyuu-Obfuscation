@@ -3,10 +3,7 @@
 var assert = require("assert");
 var fs = require('fs');
 
-var hasWorkers = false;
-try { require('worker_threads'); hasWorkers = true; } catch(x) {} // connection threads need NodeJS >= 11.7
-
-(hasWorkers ? describe : describe.skip)('Socket thread', function() {
+describe('Socket thread', function() {
 
 // threads receive opts.connect as is, so the default port must be filled in there (not only in a local copy)
 it('should pass the default port to connection threads', function() {

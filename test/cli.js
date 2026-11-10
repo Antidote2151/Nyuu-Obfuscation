@@ -18,10 +18,9 @@ var NNTPServer = require('./_nntpsrv');
 var cliUtil = require('../cli/util');
 
 var NYUU = path.join(__dirname, '..', 'bin', 'nyuu.js');
-var NODE_MAJOR = +process.versions.node.split('.')[0];
 var GROUP = 'limbs'; // one of the groups the test server accepts
 
-(NODE_MAJOR >= 12 ? describe : describe.skip)('CLI', function() {
+describe('CLI', function() {
 this.timeout(40000);
 
 var tmpRoot, tmpCount = 0, servers = [];
