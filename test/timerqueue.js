@@ -284,6 +284,23 @@ it('test queue overflow', function(done) {
 	});
 });
 
+// several adders blocked on a full queue: every one must be released once the queue drains
+// (previously at most one per take, so with more blocked adders than takes some stayed blocked and isEmpty() never became true)
+it('should release all blocked adders once drained', function(done) {
+	var q = new TimerQueue(1);
+	var released = 0;
+	for(var i = 0; i < 4; i++)
+		q.add(0, i, function() { released++; });
+	assert.equal(released, 1, 'only the first add fits');
+	var taken = 0;
+	for(var i = 0; i < 4; i++)
+		q.take(function() { taken++; });
+	assert.equal(taken, 4);
+	assert.equal(released, 4, 'all adders released');
+	assert(q.isEmpty());
+	done();
+});
+
 // TODO: test flushPending
 // TODO: need more test cases
 
